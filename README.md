@@ -3,7 +3,7 @@ dbcore
 A basic and simple ORM engine for PHP. This is still a working progress tool, but It has been successfully implemente in a cople of sites and an API. *Once they get public, they will be shared here*
 
 ## Basic Usage
-#Extend the Entity object in your own entity:
+1. Extend the Entity object in your own entity:
 ```
 class Test extends Entity{
   private $name_of_the_table = [
@@ -16,7 +16,7 @@ class Test extends Entity{
   }
 }
 ```
-#Use the entity class to perform database operations:
+2. Use the entity class to perform database operations:
 ```
 $test = new Test();
 $result = $test->fetch();
@@ -42,12 +42,12 @@ To delete:
 $test->fetch_id(array('key'=>'1'));
 $test->delete();
 ```
-##Methods
+## Methods
 
-##Configuration
+## Configuration
 It is required to have a config.ini file. There is an attached demo file.
 
-##Demo
+## Demo
 Use the demo-implementation.php file. Run to test it by:
 ``` php demo-implementation.php ```
 
