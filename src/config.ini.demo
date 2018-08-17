@@ -1,3 +1,4 @@
+#RENAME THIS FILE TO config.ini
 [database_configuration]
 server = localhost
 db_user = root
