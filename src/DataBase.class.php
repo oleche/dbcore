@@ -15,7 +15,7 @@ class DataBase
     var $username; // Mysql username
     var $password; // Mysql password
     var $db_name; // Database name
-    var $link;
+    var $db;
 
     protected static $instance = null;
 
@@ -44,52 +44,57 @@ class DataBase
         $this->db_name  = $_db_name;
 
         // Connect to server and select databse.
-        $this->link = mysqli_connect("$_host", "$_username", "$_password", "$_db_name") or die("cannot connect");
-        mysqli_query($this->link, "SET NAMES 'utf8';");
-        mysqli_query($this->link, "SET CHARACTER_SET 'utf8';");
+        $this->db = new PDO("mysql:host=$_host;dbname=$_db_name", $_username, $_password) or die("cannot connect");
+        $result = $this->db->query("SET NAMES 'utf8';");
+        $result = $this->db->query("SET CHARACTER_SET 'utf8';");
 
     }
 
     function Execute($sql)
     {
-        $result = mysqli_query($this->link, $sql);
-
+        $result = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
         // si existe un error se levanta una excepci&#65533;n
-        if ($result === FALSE) {
-            throw new Exception(mysqli_errno($this->link) . ": " . mysqli_error($this->link));
+        if (!$stmt->execute()) {
+            throw new Exception($stmt->errorInfo()[0] . ": " . $stmt->errorInfo()[2]);
         }
-        return $result;
+        return $stmt;
+    }
+
+    function LastID(){
+      return $this->db->lastInsertId();
     }
 
     // valida informaci&#65533;n que se adjuntar&#65533; a un SQL para prevenir el SQL Injection
     function CheckSQL($param)
     {
         $param = stripslashes($param);
-        $param = mysqli_real_escape_string($this->link, $param);
+        $param = $this->db->quote($param);
         return $param;
     }
 
     function BeginTransaction()
     {
-        mysqli_autocommit($this->link, FALSE);
-        mysqli_query($this->link, "START TRANSACTION ISOLATION LEVEL SERIALIZATION;");
+        $this->db->setAttribute(PDO::ATTR_AUTOCOMMIT,0);
+        $this->db->query("START TRANSACTION ISOLATION LEVEL SERIALIZATION;");
+        $this->db->beginTransaction();
     }
 
     function Commit()
     {
-        mysqli_commit($this->link);
-        mysqli_autocommit($this->link, TRUE);
+        $this->db->setAttribute( PDO::ATTR_AUTOCOMMIT, 1 );
+        $this->db->commit();
     }
 
     function Rollback()
     {
-        mysqli_rollback($this->link);
-        mysqli_autocommit($this->link, TRUE);
+        $this->db->setAttribute( PDO::ATTR_AUTOCOMMIT, 1 );
+        $this->db->rollBack();
     }
 
     function Close()
     {
-        //mysqli_close($this->link);
+        //mysqli_close($this->db);
     }
 }
 ?>

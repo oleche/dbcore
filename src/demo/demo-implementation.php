@@ -2,7 +2,7 @@
 	//NOTE: Run the migrations/demo-migrations.sql first before running this code
 	include 'Entity.php';
 
-	$config  = parse_ini_file('config.ini');
+	$config  = parse_ini_file('../config.ini');
 	$server  = $config['server'];
 	$db_user = $config['db_user'];
 	$db_pass = $config['db_pass'];

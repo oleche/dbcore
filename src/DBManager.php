@@ -128,7 +128,7 @@ class DBManager extends DataBaseManager
         try {
             $result = $this->db->Execute($sql);
 
-            while ($row = mysqli_fetch_assoc($result)) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 //$row = array_map('utf8_encode', $row);
                 if (!$custom) {
                     $rowobj = new DBManager($this->connection, $this->db_name, $this->columns_defs, $this->the_key);
@@ -263,7 +263,7 @@ class DBManager extends DataBaseManager
         try {
             $result = $this->db->Execute($sql);
 
-            while ($row = mysqli_fetch_assoc($result)) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 //$row = array_map('utf8_encode', $row);
                 $rowobj = new DBManager($this->connection, $this->db_name, $this->columns_defs, $this->the_key);
                 foreach ($this->columns_defs as $definitions) {
@@ -383,7 +383,7 @@ class DBManager extends DataBaseManager
                 //echo $sql.'<br/>';
                 $result = $this->db->Execute($sql);
 
-                if ($row = mysqli_fetch_assoc($result)) {
+                if ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                     //$row = array_map('utf8_encode', $row);
                     /*foreach($this->columns_defs as $definitions){
                     $this->columns[$definitions] = $row[$definitions];
@@ -488,7 +488,7 @@ class DBManager extends DataBaseManager
         try {
             $result = $this->db->Execute($sql);
 
-            while ($row = mysqli_fetch_assoc($result)) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 $retorno[] = $row;
             }
         }
@@ -629,7 +629,7 @@ class DBManager extends DataBaseManager
             $sql = "INSERT INTO " . $this->db_name . " (" . $columns . ") VALUES ( " . $query . " ) ";
 
             $this->db->Execute($sql);
-            $result = mysqli_insert_id($this->db->link);
+            $result = $this->db->LastID();
 
             $this->Commit();
         }
@@ -689,7 +689,7 @@ class DBManager extends DataBaseManager
         try {
             $result = $this->db->Execute($sql);
 
-            if ($row = mysqli_fetch_array($result)) {
+            if ($row = $result->fetch(PDO::FETCH_NUM)) {
                 $count = $row[0];
             }
         }
