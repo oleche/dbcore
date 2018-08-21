@@ -1,5 +1,6 @@
 {
     "name": "geekcow/dbcore",
+    "type": "library",
     "description": "A basic, simple and lightweight ORM engine for PHP",
     "license": "Apache-2.0",
     "authors": [
@@ -16,7 +17,7 @@
         }
     ],
     "autoload": {
-        "psr-0" : {
+        "psr-4" : {
             "Geekcow\\Dbcore\\" : "src/"
         }
     }
