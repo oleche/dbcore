@@ -4,8 +4,6 @@
  * V.2.0
  * DESCRIPTION: This is the simple ORM core code, here is where all the methods usable for querying a database table lays
  */
- namespace Geekcow\Dbcore;
-
 include_once("DataBaseManager.php");
 
 class DBManager extends DataBaseManager

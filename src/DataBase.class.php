@@ -8,8 +8,6 @@
  *********************************************/
 
 // metodos gen&#65533;ricos para la base de datos
-namespace Geekcow\Dbcore;
-
 class DataBase
 {
     var $host; // Host name
