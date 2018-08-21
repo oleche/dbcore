@@ -14,5 +14,10 @@
             "email": "dvasquez@geekcowsd.com",
             "role": "Developer"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-0" : {
+            "dbcore" : "src"
+        }
+    }
 }
