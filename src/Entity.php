@@ -6,9 +6,9 @@
  */
 namespace Geekcow\Dbcore;
 
-include_once 'DBManager.php';
-include_once 'DataBase.class.php';
-include_once 'Searchy.php';
+use Geekcow\Dbcore\DBManager;
+use Geekcow\Dbcore\DataBase;
+use Geekcow\Dbcore\Searchy;
 /*
 ENTITY MODEL
 Fields:
@@ -42,7 +42,7 @@ class Entity extends DBManager{
 
     $this->ipp = $config['ipp'];
 
-    $this->connection = Database::getInstance($configfile);
+    $this->connection = DataBase::getInstance($configfile);
 
     $col = array();//'id', 'name', 'format', 'max_size', 'max_dimensions', 'mime', 'type');
     $key = array();//'id');

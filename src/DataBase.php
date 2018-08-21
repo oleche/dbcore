@@ -6,6 +6,10 @@
  * Oscar Leche -- Refactoring -- 16/08/2017
  *
  *********************************************/
+namespace Geekcow\Dbcore;
+
+use \PDO;
+use \Exception;
 
 // metodos gen&#65533;ricos para la base de datos
 class DataBase

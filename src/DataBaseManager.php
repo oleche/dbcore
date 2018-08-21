@@ -7,6 +7,8 @@
  *  Oscar Leche -- Refactoring -- 11/05/2016
  *
  *********************************************/
+namespace Geekcow\Dbcore;
+
 class DataBaseManager
 {
     public $db;

@@ -4,6 +4,8 @@
  * V.1.0
  * DESCRIPTION: This is the object-based search component
 */
+namespace Geekcow\Dbcore;
+
 class Searchy {
   private static $COMPARATORS = array(
     'eq' => '=',
