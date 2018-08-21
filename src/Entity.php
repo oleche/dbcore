@@ -4,7 +4,7 @@
  * V.1.0
  * DESCRIPTION: This is the Entity definition class. It will allow the entity object to inherit all the database functions, pagination and searching. This is enabled to work with link header pagination for fony-php
  */
- namespace dbcore;
+namespace Geekcow\Dbcore;
 
 include_once 'DBManager.php';
 include_once 'DataBase.class.php';
