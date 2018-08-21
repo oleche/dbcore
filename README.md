@@ -47,6 +47,13 @@ $test->delete();
 ## Configuration
 It is required to have a config.ini file. There is an attached demo file.
 
+## Composer
+For installing it using composer, just:
+```
+composer require geekcow/dbcore
+```
+NOTE: Always remember to autoload. A good usage example is in ``` src/demo/demo-composer.php ```
+
 ## Demo
 Use the demo-implementation.php file. Run to test it by:
 ``` php demo-implementation.php ```
