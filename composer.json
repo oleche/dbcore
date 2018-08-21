@@ -1,12 +1,4 @@
 {
     "name": "geekcow/dbcore",
-    "description": "A basic, simple and lightweight ORM engine for PHP",
-    "require": {
-        "php": "^5.3.3 || ^7.0"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^7",
-        "phpunit/dbunit": "^4.0",
-        "phpunit/php-invoker": "^2.0"
-    }
+    "description": "A basic, simple and lightweight ORM engine for PHP"
 }
