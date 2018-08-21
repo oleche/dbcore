@@ -1,4 +1,19 @@
 {
     "name": "geekcow/dbcore",
-    "description": "A basic, simple and lightweight ORM engine for PHP"
+    "description": "A basic, simple and lightweight ORM engine for PHP",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Oscar Leche",
+            "email": "oleche@geekcowsd.com",
+            "homepage": "http://www.oscarleche.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Diego Vasquez",
+            "email": "",
+            "homepage": "",
+            "role": "Developer"
+        }
+    ]
 }
