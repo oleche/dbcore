@@ -1,6 +1,9 @@
 <?php
 	//NOTE: Run the migrations/demo-migrations.sql first before running this code
-	include '../Entity.php';
+	foreach (glob("../*.php") as $filename)
+	{
+	    require_once $filename;
+	}
 
 	$config  = parse_ini_file('../config.ini');
 	$server  = $config['server'];

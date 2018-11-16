@@ -36,7 +36,7 @@ class DBManager extends DataBaseManager
 
 
     // constructor
-    function __construct($connection, $db_name, $db_columns, $key, $foreigns = null, $ipp = 25)
+    function __construct($connection, $db_name, $db_columns, $key, $foreigns = null, $ipp = 25, $fullmap = array())
     {
         parent::__construct($connection);
         $this->db_name           = $db_name;
@@ -50,6 +50,7 @@ class DBManager extends DataBaseManager
         $this->count             = 0;
         foreach ($db_columns as $columnname)
             $this->columns[$columnname] = null;
+
         if (!is_null($foreigns)) {
             foreach ($foreigns as $relation => $v) {
                 if ($this->foreign_relations[$relation][1] == $this::SELF) {
@@ -57,6 +58,10 @@ class DBManager extends DataBaseManager
                 }
                 $this->foreign_keys[] = $relation;
             }
+        }
+
+        if ( !$this->table_exists() ){
+          $this->create_table($fullmap);
         }
     }
 
@@ -643,6 +648,135 @@ class DBManager extends DataBaseManager
             return FALSE;
         }
         return $result;
+    }
+
+    private function table_exists(){
+      try {
+        $sql = "SELECT 1 FROM $this->db_name LIMIT 1";
+        $result = $this->db->Execute($sql);
+      } catch (Exception $e) {
+          return FALSE;
+      }
+
+      return $result !== FALSE;
+    }
+
+    private function create_table($map = array()){
+      $query = "";
+      $primary = array();
+      $keys = array();
+      $relation = array();
+      $unique = array();
+      $incremental = false;
+
+      $query = "CREATE TABLE IF NOT EXISTS `$this->db_name` (";
+      foreach ($map as $k => $m) {
+        if (isset($m['pk']) && $m['pk']){
+          if ($m['type'] == "int"){
+            $incremental = true;
+          }
+          $primary[] = $k;
+        }
+        if (isset($m['unique']) && $m['unique']){
+          $unique[] = $k;
+        }
+        if (isset($m['foreign'])){
+          $relation[$k] = $m;
+          $keys[] = $k;
+        }
+        $null = "";
+        if (isset($m['null'])){
+            $null = ( $m['null'] )?"DEFAULT NULL":"NOT NULL";
+        }
+        $query .= "`$k` ".$this->build_type($m)." ".$null.", ";
+      }
+      if (count($primary) > 0){
+        $query .= "PRIMARY KEY (";
+        foreach ($primary as $k => $v) {
+          $query .= "`$v`, ";
+        }
+        $query = rtrim($query,", ");
+        $query .= "), ";
+      }
+      if (count($keys) > 0){
+        foreach ($keys as $k => $v) {
+          $query .= "KEY `$v` (`$v`), ";
+        }
+      }
+      if (count($primary) > 0){
+        $query .= "CONSTRAINT `UC_$this->db_name` UNIQUE (";
+        foreach ($primary as $k => $v) {
+          $query .= "`$v`, ";
+        }
+        $query = rtrim($query,", ");
+        $query .= "), ";
+      }
+      $query = rtrim($query,", ");
+
+      $query .= ") ENGINE=InnoDB DEFAULT CHARSET=latin1".(($incremental)?" AUTO_INCREMENT=1":"");
+
+      try {
+          $this->BeginTransaction();
+
+          $this->db->Execute($query);
+
+          $this->Commit();
+      }
+      catch (Exception $e) {
+          $this->RollBack();
+          $this->err_data = $e->getMessage();
+      }
+
+      if (count($relation) > 0){
+        $query = "ALTER TABLE `$this->db_name` ";
+        $count = 1;
+        foreach ($relation as $key => $value) {
+            $query .= "ADD CONSTRAINT `".$this->db_name."_ibfk_".$count."` FOREIGN KEY (`$key`) REFERENCES `".$value['foreign'][1]->db_name."` (`".$value['foreign'][0]."`) ON DELETE CASCADE ON UPDATE CASCADE, ";
+            $count++;
+        }
+        $query = rtrim($query,", ");
+
+        try {
+            $this->BeginTransaction();
+
+            $this->db->Execute($query);
+
+            $this->Commit();
+        }
+        catch (Exception $e) {
+            $this->RollBack();
+            $this->err_data = $e->getMessage();
+        }
+      }
+
+    }
+
+    private function build_type($row){
+      $type = "";
+      switch ($row['type']) {
+        case 'string':
+          $type = "varchar(".((isset($row['length']))?$row['length']:"25").")";
+          break;
+        case 'int':
+          $type = "int(11)";
+          break;
+        case 'boolean':
+          $type = "tinyint(1)";
+          break;
+        case 'datetime':
+          $type = "datetime";
+          break;
+        case 'double':
+          $type = "double";
+          break;
+        case 'decimal':
+          $type = "decimal(10,2)";
+          break;
+        default:
+          $type = "text";
+          break;
+      }
+      return $type;
     }
 
     private function assemble_insert_columns()

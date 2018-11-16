@@ -68,7 +68,7 @@ class Entity extends DBManager{
     //end of exploration
     $table = $this->from_camel_case($table_name);
 
-    parent::__construct($this->connection, $table, $col, $key, $foreign);
+    parent::__construct($this->connection, $table, $col, $key, $foreign, $this->ipp, $this->mapping);
 
     $a = get_class_vars(get_class($this));
   }

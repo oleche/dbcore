@@ -1,6 +1,6 @@
 USE `demo`;
 
-CREATE TABLE IF NOT EXISTS `demo_user` (
+CREATE TABLE IF NOT EXISTS `demo_user_not_linked` (
   `username` varchar(15) NOT NULL,
   `name` varchar(45) NOT NULL,
   `lastname` varchar(45) DEFAULT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `user_type` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
-ALTER TABLE `demo_user`
+ALTER TABLE `demo_user_not_linked`
   ADD CONSTRAINT `user_ibfk_1` FOREIGN KEY (`type`) REFERENCES `user_type` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 INSERT INTO `user_type` (`id`, `name`) VALUES
