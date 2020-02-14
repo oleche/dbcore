@@ -47,15 +47,17 @@ class DataBase
         $this->db_name  = $_db_name;
 
         // Connect to server and select databse.
-        $this->db = new PDO("mysql:host=$_host;dbname=$_db_name", $_username, $_password) or die("cannot connect");
+        $this->db = new PDO("mysql:host=$_host", $_username, $_password) or die("cannot connect");
         $result = $this->db->query("SET NAMES 'utf8';");
         $result = $this->db->query("SET CHARACTER_SET 'utf8';");
 
+        $_db_name = "`".str_replace("`","``",$_db_name)."`";
+        $this->db->query("CREATE DATABASE IF NOT EXISTS $_db_name;");
+        $this->db->query("use $_db_name;");
     }
 
     function Execute($sql)
     {
-        $result = $this->db->query($sql);
         $stmt = $this->db->prepare($sql);
         // si existe un error se levanta una excepci&#65533;n
         if (!$stmt->execute()) {

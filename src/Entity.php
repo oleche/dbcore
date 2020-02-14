@@ -6,7 +6,7 @@
  */
 namespace Geekcow\Dbcore;
 
-use Geekcow\Dbcore\DBManager;
+use Geekcow\Dbcore\DBCore;
 use Geekcow\Dbcore\DataBase;
 use Geekcow\Dbcore\Searchy;
 /*
@@ -25,7 +25,7 @@ Fields:
   postable: if the field needs to be filled while dinamically created or updated.
     -true or false
 */
-class Entity extends DBManager{
+class Entity extends DBCore{
   protected $ipp;
   public $table;
   public $connection;

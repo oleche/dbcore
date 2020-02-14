@@ -1,20 +1,16 @@
 <?php
 	//NOTE: Run the migrations/demo-migrations.sql first before running this code
-	require_once 'vendor/autoload.php';
+
+	$realPath = realpath(__DIR__ . '/../..');
+	require_once $realPath.'/vendor/autoload.php';
 
 	use Geekcow\Dbcore\Entity;
 
-	$config  = parse_ini_file("config.ini");
+	$config  = parse_ini_file(__DIR__."/config.ini");
 	$server  = $config['server'];
 	$db_user = $config['db_user'];
 	$db_pass = $config['db_pass'];
 	$db_database = $config['database'];
-
-	exec("echo \"drop database if exists $db_database\" | mysql -u $db_user -p$db_pass");
-
-	exec("echo \"create database $db_database\" | mysql -u $db_user -p$db_pass");
-
-	exec("mysql -h \"$server\" -u \"$db_user\" \"-p$db_pass\" \"$db_database\" < \"".__DIR__."/migrations/demo-migrations.sql\"");
 
 	class UserType extends Entity{
 	  private $user_type = [
@@ -44,6 +40,15 @@
 	  }
 	}
 
+	echo 'INSERTING Type';
+
+	$userType = new UserType();
+	if (!$userType->fetch_id(array('id'=>1))){
+		$userType->columns['id'] = 1;
+		$userType->columns['name'] = 'Test User';
+		$userType->insert();
+	}
+
 	$demoUser = new DemoUser();
 
 	$demoUser->columns['username'] = 'oleche';
@@ -54,7 +59,7 @@
 	$demoUser->columns['enabled'] = TRUE;
 	$demoUser->columns['type'] = 1;
 
-	echo 'INSERTING USER: '.$demoUser->columns['username'];
+	echo "\nINSERTING USER: ".$demoUser->columns['username'];
 	$demoUser->insert();
 	echo "\n";
 
@@ -63,18 +68,18 @@
 	$result = $demoUser->fetch();
 	print_r($demoUser->fetched_result);
 
-	$demoUser = new DemoUser();
-	$demoUser->columns['username'] = 'fperez';
-	$demoUser->columns['name'] = 'Francisco';
-	$demoUser->columns['lastname'] = 'Perez';
-	$demoUser->columns['email'] = 'notfrancisco@email.com';
-	$demoUser->columns['password'] = '123';
-	$demoUser->columns['enabled'] = TRUE;
-	$demoUser->columns['type'] = 2;
+	$demoUser1 = new DemoUser();
+	$demoUser1->columns['username'] = 'fperez';
+	$demoUser1->columns['name'] = 'Francisco';
+	$demoUser1->columns['lastname'] = 'Perez';
+	$demoUser1->columns['email'] = 'notfrancisco@email.com';
+	$demoUser1->columns['password'] = '123';
+	$demoUser1->columns['enabled'] = TRUE;
+	$demoUser1->columns['type'] = 1;
 
 	echo "\n";
-	echo 'INSERTING USER: '.$demoUser->columns['username'];
-	$demoUser->insert();
+	echo 'INSERTING USER: '.$demoUser1->columns['username'];
+	$demoUser1->insert();
 	echo "\n";
 
 	echo 'FETCHING WITH TWO RESULT';
@@ -132,5 +137,10 @@
 		echo 'error: '.$demoUser->err_data;
 	}
 
-	exec("echo \"drop database $db_database\" | mysql -u $db_user -p$db_pass");
+	echo "\nDELETING Last USER";
+	$demoUser1->delete();
+
+	echo "\nDELETING USER TYPE";
+	$userType->delete();
+	echo "\n";
 ?>
