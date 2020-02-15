@@ -2,7 +2,7 @@ dbcore
 ======
 [![CircleCI](https://circleci.com/gh/oleche/dbcore.svg?style=svg&circle-token=45f4c4a0b4c32cc66de8689377f298fb2fe7190d)](https://circleci.com/gh/oleche/dbcore) [![Latest Stable Version](https://poser.pugx.org/geekcow/dbcore/v/stable)](https://packagist.org/packages/geekcow/dbcore) [![Total Downloads](https://poser.pugx.org/geekcow/dbcore/downloads)](https://packagist.org/packages/geekcow/dbcore)
 
-A basic and simple ORM engine for PHP. This is still a working progress tool, but It has been successfully implemente in a cople of sites and an API. *Once they get public, they will be shared here*
+A basic and simple ORM engine for PHP. This is still a work in progress tool, but It has been successfully implemente in a couple of sites and an API. *Once they get public, they will be shared here*
 
 ## Basic Usage
 1. Extend the Entity object in your own entity:

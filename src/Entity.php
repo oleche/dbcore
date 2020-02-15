@@ -77,6 +77,7 @@ class Entity extends DBCore{
     return $this->mapping;
   }
 
+  //According to ietf rfc5988 definition for linking
   public function paginate($class){
     if ($class->pages > 1){
       $this->pagination_link = "Link: ";
