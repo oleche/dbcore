@@ -501,6 +501,41 @@ class DBCore extends DataBaseManager
         return $retorno;
     }
 
+    /*
+     * Method: isUnique
+     * Determines if the an entry already exists by fetching a set of columns determined by the parameters
+     *
+     * @uniquenessKeys		The set of keys that need to be validated
+     * @values		        The set of values that will be evaluated
+     * */
+    private function isUnique($uniquenessKeys = array(), $values = array()){
+      $count = 0;
+      $query = "";
+      foreach ($this->uniqueness as $key) {
+        if ($count > 0){
+          $query .= " AND ";
+        }
+
+        if (isset($values[$key])){
+          $query .= $this->key_value_pair($key, $values[$key]);
+        }
+
+        $count++;
+      }
+
+      if ($query != "") {
+          $query = " WHERE " . $query;
+      }
+
+      $items = $this->fixed_count('SELECT count(*) FROM ' . $this->db_name . '' . $query . ';');
+
+      if ($items == 0){
+        return true;
+      }
+
+      return false;
+    }
+
 		/*
      * Method: delete
      * Executes a delete based on the information of the model and per Keys, return true or false based on the status of the deletion

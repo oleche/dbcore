@@ -77,7 +77,10 @@ class Entity extends DBCore{
     return $this->mapping;
   }
 
-  //According to ietf rfc5988 definition for linking
+  /**
+   * Handles the pagination via the Link http header. According to ietf rfc5988 definition for linking
+   *
+   */
   public function paginate($class){
     if ($class->pages > 1){
       $this->pagination_link = "Link: ";
@@ -112,6 +115,10 @@ class Entity extends DBCore{
     }
   }
 
+  /**
+   * Set the page and the items per page based on the uri parameters per_page and page.
+   *
+   */
   public function set_paging(&$class, $params){
     $this->per_page = (isset($params['per_page']) && trim($params['per_page']) != '')?$params['per_page']:$this->ipp;
     $this->page = (isset($params['page']) && trim($params['page']) != '')?$params['page']:1;
