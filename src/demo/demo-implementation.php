@@ -6,10 +6,10 @@
 	}
 
 	$config  = parse_ini_file('../config.ini');
-	$server  = $config['server'];
-	$db_user = $config['db_user'];
-	$db_pass = $config['db_pass'];
-	$db_database = $config['database'];
+	$server  = $config['dbcore.server'];
+	$db_user = $config['dbcore.db_user'];
+	$db_pass = $config['dbcore.db_pass'];
+	$db_database = $config['dbcore.database'];
 
 	exec("echo \"create database $db_database\" | mysql -u $db_user -p$db_pass");
 

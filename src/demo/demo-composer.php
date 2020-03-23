@@ -7,10 +7,10 @@
 	use Geekcow\Dbcore\Entity;
 
 	$config  = parse_ini_file(__DIR__."/config.ini");
-	$server  = $config['server'];
-	$db_user = $config['db_user'];
-	$db_pass = $config['db_pass'];
-	$db_database = $config['database'];
+	$server  = $config['dbcore.server'];
+	$db_user = $config['dbcore.db_user'];
+	$db_pass = $config['dbcore.db_pass'];
+	$db_database = $config['dbcore.database'];
 
 	class UserType extends Entity{
 	  private $user_type = [
