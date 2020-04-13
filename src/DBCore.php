@@ -671,15 +671,15 @@ class DBCore extends DataBaseManager
       $keys = array();
       $relation = array();
       $unique = array();
-      $incremental = false;
 
       $query = "CREATE TABLE IF NOT EXISTS `$this->db_name` (";
       foreach ($map as $k => $m) {
         if (isset($m['pk']) && $m['pk']){
-          if ($m['type'] == "int"){
-            $incremental = true;
-          }
           $primary[] = $k;
+        }
+        $incremental = "";
+        if (isset($m['incremental']) && $m['incremental']){
+          $incremental = " AUTO_INCREMENT";
         }
         if (isset($m['unique']) && $m['unique']){
           $unique[] = $k;
@@ -692,7 +692,7 @@ class DBCore extends DataBaseManager
         if (isset($m['null'])){
             $null = ( $m['null'] )?"DEFAULT NULL":"NOT NULL";
         }
-        $query .= "`$k` ".$this->build_type($m)." ".$null.", ";
+        $query .= "`$k` ".$this->build_type($m)." ".$null.$incremental.", ";
       }
       if (count($primary) > 0){
         $query .= "PRIMARY KEY (";
@@ -717,7 +717,7 @@ class DBCore extends DataBaseManager
       }
       $query = rtrim($query,", ");
 
-      $query .= ") ENGINE=InnoDB DEFAULT CHARSET=latin1".(($incremental)?" AUTO_INCREMENT=1":"");
+      $query .= ") ENGINE=InnoDB DEFAULT CHARSET=latin1";
 
       try {
           $this->BeginTransaction();
