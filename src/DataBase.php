@@ -26,10 +26,10 @@ class DataBase
     {
         $config = parse_ini_file($configfile);
 
-        $server      = $config['dbcore.server'];
-        $db_user     = $config['dbcore.db_user'];
-        $db_pass     = $config['dbcore.db_pass'];
-        $db_database = $config['dbcore.database'];
+        $server      = $config['dbcore.server'] ?? 'localhost';
+        $db_user     = $config['dbcore.db_user'] ?? 'root';
+        $db_pass     = $config['dbcore.db_pass'] ?? '123';
+        $db_database = $config['dbcore.database'] ?? 'fony';
 
         if (!self::$instance) {
             self::$instance = new DataBase($server, $db_user, $db_pass, $db_database);

@@ -40,7 +40,7 @@ class Entity extends DBCore{
   public function __construct($map, $table_name, $configfile = "config.ini"){
     $config = parse_ini_file($configfile);
 
-    $this->ipp = $config['dbcore.ipp'];
+    $this->ipp = $config['dbcore.ipp'] ?? '25';
 
     $this->connection = DataBase::getInstance($configfile);
 
