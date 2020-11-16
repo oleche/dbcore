@@ -566,7 +566,6 @@ class DBCore extends DataBaseManager
             $this->RollBack();
             //throw new Exception("DELETE) " . $e->getMessage());
             $this->err_data = $ex->getMessage();
-            print_r($ex);
             return FALSE;
         }
 
@@ -647,7 +646,6 @@ class DBCore extends DataBaseManager
         }
         catch (Exception $e) {
             $this->RollBack();
-            print_r($e);
             $this->err_data = $e->getMessage();
             return FALSE;
         }
