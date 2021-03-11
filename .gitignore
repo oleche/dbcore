@@ -1,4 +1,5 @@
 *.ini
 src/*.ini
 vendor/
+.idea/
 demo/config.ini

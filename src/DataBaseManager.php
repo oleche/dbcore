@@ -7,6 +7,7 @@
  *  Oscar Leche -- Refactoring -- 11/05/2016
  *
  *********************************************/
+
 namespace Geekcow\Dbcore;
 
 use Geekcow\Dbcore\utils\QueryUtils;
@@ -15,7 +16,7 @@ class DataBaseManager extends QueryUtils
 {
     public $db;
 
-    public function __construct($connection)
+    public function __construct(DataBase $connection)
     {
         //$this->db = new DataBase($server, $user, $password, $database);
         $this->db = $connection;
@@ -23,22 +24,21 @@ class DataBaseManager extends QueryUtils
 
     public function __destruct()
     {
-        $this->db->Close();
+        $this->db->close();
     }
 
-    public function BeginTransaction()
+    public function beginTransaction()
     {
-        $this->db->BeginTransaction();
+        $this->db->beginTransaction();
     }
 
-    public function Commit()
+    public function commit()
     {
-        $this->db->Commit();
+        $this->db->commit();
     }
 
-    public function RollBack()
+    public function rollBack()
     {
-        $this->db->RollBack();
+        $this->db->rollBack();
     }
 }
-?>
