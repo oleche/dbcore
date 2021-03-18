@@ -550,7 +550,7 @@ class DBCore extends DataBaseManager
      * @param array $values The set of values that will be evaluated
      * @return bool
      */
-    private function isUnique($uniquenessKeys = array(), $values = array())
+    public function isUnique($uniquenessKeys = array(), $values = array())
     {
         $count = 0;
         $query = "";
