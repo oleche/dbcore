@@ -148,7 +148,7 @@ class DBCore extends DataBaseManager
                 $sql = $query->toSql();
 
                 $this->count = $this->fixedCount(
-                    $count_sql;
+                    $count_sql
                 );
                 if ($this->pagination) {
                     $this->pages = ceil($this->count / $this->ipp);

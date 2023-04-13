@@ -34,6 +34,7 @@ class QuerySelectBuilder
     public function withTable(string $table): QuerySelectBuilder
     {
         $this->tables[] = $table;
+        return $this;
     }
 
     public function withJoin(string $table, QuerySelectBuilder $on, $type = 'JOIN')
@@ -82,6 +83,7 @@ class QuerySelectBuilder
         }
         $condition_prefix = (!$only_conditions) ? ' WHERE ' : '';
         $condition_string = $condition_prefix . implode('', $this->conditions);
+        return $condition_string;
     }
 
     private function buidColumns(): string
@@ -89,7 +91,7 @@ class QuerySelectBuilder
         if ($this->for_count) {
             return "count(*)";
         }
-        return implode(', ', $this->columns)
+        return implode(', ', $this->columns);
     }
 
     private function buildSelect(): string
