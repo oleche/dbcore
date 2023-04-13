@@ -156,6 +156,8 @@ class DBCore extends DataBaseManager
                 } else {
                     $sql .= ';';
                 }
+            } else {
+                $sql = $query;
             }
         }
 
