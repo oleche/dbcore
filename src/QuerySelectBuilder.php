@@ -19,6 +19,13 @@ class QuerySelectBuilder
         $this->join_tables = [];
     }
 
+    public function withSearchy(array $params): QuerySelectBuilder
+    {
+        $search = Searchy::assemblySearch($params);
+        $this->addToCondition($search, "");
+        return $this;
+    }
+
     public function withColumns(array $columns = ["*"]): QuerySelectBuilder
     {
         $this->columns = $columns;
