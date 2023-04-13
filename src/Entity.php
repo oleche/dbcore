@@ -101,36 +101,39 @@ class Entity extends DBCore
         }
 
         if ($class->pages > 1) {
+            $uri_parts = explode('?', $_SERVER['REQUEST_URI'], 2);
+            $curated_uri = $uri_parts[0];
+
             $this->pagination_link = "Link: ";
             if (($this->page + 1) > 1) {
-                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=" . $this->page;
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $curated_uri . "?page=" . $this->page;
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
-                    $this->pagination_link .= "&$rest";
+                    $this->pagination_link .= "$rest";
                 }
                 $this->pagination_link .= '>; rel="prev",';
             }
             if (($this->page + 1) < $class->pages) {
-                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=" . ($this->page + 2);
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $curated_uri . "?page=" . ($this->page + 2);
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
-                    $this->pagination_link .= "&$rest";
+                    $this->pagination_link .= "$rest";
                 }
                 $this->pagination_link .= '>; rel="next",';
             }
             if (($this->page + 1) <= $class->pages) {
-                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=1";
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $curated_uri . "?page=1";
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
-                    $this->pagination_link .= "&$rest";
+                    $this->pagination_link .= "$rest";
                 }
                 $this->pagination_link .= '>; rel="first",';
             }
             if (($this->page + 1) >= 1) {
-                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=" . $class->pages;
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $curated_uri . "?page=" . $class->pages;
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
-                    $this->pagination_link .= "&$rest";
+                    $this->pagination_link .= "$rest";
                 }
                 $this->pagination_link .= '>; rel="last",';
             }
@@ -164,19 +167,15 @@ class Entity extends DBCore
     private function filterGets($ignored = array())
     {
         $query = "";
-        $count = 0;
         foreach ($_GET as $key => $value) {
             if (!in_array($key, $ignored)) {
+                $query .= "&";
                 if (is_array($value)) {
                     $key = $this->convertArrayKey($key, $value);
                     $value = $this->convertArrayValue($value);
                 }
                 $query .= $key . '=' . $value;
             }
-            if ($count > 0) {
-                $query .= "&";
-            }
-            $count++;
         }
 
         return $query;
