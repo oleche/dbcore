@@ -138,7 +138,25 @@ class DBCore extends DataBaseManager
                 $sql .= ';';
             }
         } else {
-            $sql = $query;
+            if (
+              (int)method_exists($query, 'toSql') > 0 &&
+              is_callable(array($query, 'toSql'))
+            ) {
+                $query->forCount(true);
+                $count_sql = $query->toSql();
+                $query->forCount(false);
+                $sql = $query->toSql();
+
+                $this->count = $this->fixedCount(
+                    $count_sql;
+                );
+                if ($this->pagination) {
+                    $this->pages = ceil($this->count / $this->ipp);
+                    $sql .= ' LIMIT ' . ($page * $this->ipp) . ',' . $this->ipp . ';';
+                } else {
+                    $sql .= ';';
+                }
+            }
         }
 
         $retorno = array();
@@ -810,6 +828,9 @@ class DBCore extends DataBaseManager
                 break;
             case 'datetime':
                 $type = "datetime";
+                break;
+            case 'date':
+                $type = "date";
                 break;
             case 'double':
                 $type = "double";

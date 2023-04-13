@@ -90,10 +90,20 @@ class Entity extends DBCore
      */
     public function paginate($class)
     {
+        if (isset($_SERVER['HTTPS']) &&
+            ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) ||
+            isset($_SERVER['HTTP_X_FORWARDED_PROTO']) &&
+            $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+            $protocol = 'https://';
+        }
+        else {
+            $protocol = 'http://';
+        }
+
         if ($class->pages > 1) {
             $this->pagination_link = "Link: ";
             if (($this->page + 1) > 1) {
-                $this->pagination_link .= "<" . $_SERVER['SCRIPT_URI'] . "?page=" . $this->page;
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=" . $this->page;
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
                     $this->pagination_link .= "&$rest";
@@ -101,7 +111,7 @@ class Entity extends DBCore
                 $this->pagination_link .= '>; rel="prev",';
             }
             if (($this->page + 1) < $class->pages) {
-                $this->pagination_link .= "<" . $_SERVER['SCRIPT_URI'] . "?page=" . ($this->page + 2);
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=" . ($this->page + 2);
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
                     $this->pagination_link .= "&$rest";
@@ -109,7 +119,7 @@ class Entity extends DBCore
                 $this->pagination_link .= '>; rel="next",';
             }
             if (($this->page + 1) <= $class->pages) {
-                $this->pagination_link .= "<" . $_SERVER['SCRIPT_URI'] . "?page=1";
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=1";
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
                     $this->pagination_link .= "&$rest";
@@ -117,7 +127,7 @@ class Entity extends DBCore
                 $this->pagination_link .= '>; rel="first",';
             }
             if (($this->page + 1) >= 1) {
-                $this->pagination_link .= "<" . $_SERVER['SCRIPT_URI'] . "?page=" . $class->pages;
+                $this->pagination_link .= "<" . $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?page=" . $class->pages;
                 $rest = $this->filterGets(array('page', 'request'));
                 if ($rest != "") {
                     $this->pagination_link .= "&$rest";
