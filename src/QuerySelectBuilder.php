@@ -22,7 +22,9 @@ class QuerySelectBuilder
     public function withSearchy(array $params): QuerySelectBuilder
     {
         $search = Searchy::assemblySearch($params);
-        $this->addToCondition($search, "");
+        if ($search != "") {
+          $this->addToCondition($search, "");
+        }
         return $this;
     }
 
