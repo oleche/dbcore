@@ -95,7 +95,7 @@ class QuerySelectBuilder
         return $condition_string;
     }
 
-    private function buidColumns(): string
+    private function buildColumns(): string
     {
         if ($this->for_count) {
             return "count(*)";
