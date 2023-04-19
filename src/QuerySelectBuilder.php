@@ -9,6 +9,7 @@ class QuerySelectBuilder
     private $for_count;
     private $tables;
     private $join_tables;
+    private $group_tables;
 
     public function __construct()
     {
@@ -17,6 +18,7 @@ class QuerySelectBuilder
         $this->conditions = [];
         $this->tables = [];
         $this->join_tables = [];
+        $this->group_tables = [];
     }
 
     public function withSearchy(array $params): QuerySelectBuilder
@@ -46,12 +48,21 @@ class QuerySelectBuilder
         return $this;
     }
 
-    public function withJoin(string $table, QuerySelectBuilder $on, $type = 'JOIN')
+    public function withGroup(string $column = ''): QuerySelectBuilder
     {
-        $this->join_tables[] = ' ' . $type . ' ' . $table . ' ON ' . $on->buildConditions(true);
+        if (trim($column) != '') {
+            $this->group_tables[] = $column;
+        }
+        return $this;
     }
 
-    public function withWhereBetween(string $column, $from, $to, $and = true): QueryBuilder
+    public function withJoin(string $table, QuerySelectBuilder $on, $type = 'JOIN'): QuerySelectBuilder
+    {
+        $this->join_tables[] = ' ' . $type . ' ' . $table . ' ON ' . $on->buildConditions(true);
+        return $this;
+    }
+
+    public function withWhereBetween(string $column, $from, $to, $and = true): QuerySelectBuilder
     {
         $condition_predicate = ' BETWEEN ' .  $this->filterValue($from) . " AND " . $this->filterValue($to);
 
@@ -79,6 +90,14 @@ class QuerySelectBuilder
     {
         return ' FROM ' . implode(', ', $this->tables);
     }
+    private function buildGroup(): string
+    {
+        if (count($this->group_tables) == 0 || $this->for_count){
+            return '';
+        }
+        return ' GROUP BY ' . implode(', ', $this->group_tables);
+    }
+
 
     private function buildJoin(): string
     {
