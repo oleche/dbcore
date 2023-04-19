@@ -83,7 +83,7 @@ class QuerySelectBuilder
 
     public function toSql(): string
     {
-        return $this->buildSelect() . $this->buildFrom() . $this->buildJoin() .  $this->buildConditions();
+        return $this->buildSelect() . $this->buildFrom() . $this->buildJoin() .  $this->buildConditions() . $this->buildGroup();
     }
 
     private function buildFrom(): string
