@@ -73,7 +73,7 @@ class DBCoreTest extends TestCase
             ->willReturnCallback(function ($fetchStyle = \PDO::FETCH_ASSOC) use (&$data) {
                 $row = current($data);
                 next($data);
-                return $row ? (object)$row : false;
+                return $row ? $row : false;
             });
 
         // Mocking fetchAll() to return all rows at once
