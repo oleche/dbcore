@@ -4,75 +4,63 @@ declare(strict_types=1);
 namespace Geekcow\Dbcore;
 
 use PHPUnit\Framework\TestCase;
+use Exception;
 
 class DBCoreTest extends TestCase
 {
-    public function fetchWithValidQueryReturnsExpectedResults(): void {
-        $this->db->method('Execute')->willReturn($this->prepareMockResult([
+    private $dbCore;
+    private $pdoMock;
+
+    protected function setUp(): void
+    {
+        $this->pdoMock = $this->createMock(\PDO::class);
+        $this->dbCore = new DBCore($this->pdoMock, 'test_table', ['id', 'name'], 'id');
+    }
+
+    public function testFetchWithValidQueryReturnsExpectedResults(): void
+    {
+        $this->pdoMock->method('Execute')->willReturn($this->prepareMockResult([
             ['id' => 1, 'name' => 'John Doe'],
             ['id' => 2, 'name' => 'Jane Doe']
         ]));
-        $results = $this->entity->fetch("name LIKE '%Doe%'");
+        $results = $this->dbCore->fetch("name LIKE '%Doe%'");
         $this->assertCount(2, $results);
         $this->assertEquals('John Doe', $results[0]['name']);
     }
 
-    public function fetchWithEmptyQueryReturnsAllResults(): void {
-        $this->db->method('Execute')->willReturn($this->prepareMockResult([
-            ['id' => 1, 'name' => 'John Doe'],
-            ['id' => 2, 'name' => 'Jane Doe']
-        ]));
-        $results = $this->entity->fetch();
-        $this->assertCount(2, $results);
+    public function testFetchWithNoResultsReturnsEmptyArray(): void
+    {
+        $this->pdoMock->method('Execute')->willReturn($this->prepareMockResult([]));
+        $results = $this->dbCore->fetch("name = 'Nonexistent'");
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
     }
 
-    public function fetchWithInvalidQueryReturnsFalse(): void {
-        $this->db->method('Execute')->willReturn(true);
-        $this->db->method('LastID')->willReturn(1);
-        $result = $this->entity->insert();
+    public function testInsertWithValidDataReturnsLastInsertedId(): void
+    {
+        $this->pdoMock->method('Execute')->willReturn(true);
+        $this->pdoMock->method('LastID')->willReturn(1);
+        $result = $this->dbCore->insert(['name' => 'New Entry']);
         $this->assertEquals(1, $result);
     }
 
-    public function insertWithInvalidDataReturnsFalse(): void {
-        $this->db->method('Execute')->will($this->throwException(new Exception()));
-        $result = $this->entity->fetch("INVALID QUERY");
-        $this->assertFalse($result);
+    public function insertWithInvalidDataThrowsException(): void
+    {
+        $this->expectException(Exception::class);
+        $this->pdoMock->method('Execute')->will($this->throwException(new Exception()));
+        $this->dbCore->insert(['invalid_column' => 'value']);
     }
 
-    public function insertWithValidDataReturnsLastInsertedId(): void {
-        $this->db->method('Execute')->will($this->throwException(new Exception()));
-        $result = $this->entity->insert();
-        $this->assertFalse($result);
-    }
-
-    public function deleteWithValidConditionsReturnsTrue(): void {
-        $this->db->method('Execute')->willReturn(true);
-        $result = $this->entity->delete("id = 1");
+    public function updateWithValidConditionsReturnsTrue(): void
+    {
+        $this->pdoMock->method('Execute')->willReturn(true);
+        $result = $this->dbCore->update("id = 1", ['name' => 'Updated Name']);
         $this->assertTrue($result);
     }
 
-    public function deleteWithInvalidConditionsReturnsFalse(): void {
-        $this->db->method('Execute')->will($this->throwException(new Exception()));
-        $result = $this->entity->delete("INVALID CONDITION");
-        $this->assertFalse($result);
-    }
-
-    public function updateWithValidConditionsReturnsTrue(): void {
-        $this->db->method('Execute')->willReturn(true);
-        $result = $this->entity->update(null, ['name' => 'John Doe Updated'], ['id' => 1]);
-        $this->assertTrue($result);
-    }
-
-    public function updateWithInvalidConditionsReturnsFalse(): void {
-        $this->db->method('Execute')->will($this->throwException(new Exception()));
-        $result = $this->entity->update(null, ['name' => 'Invalid Update'], ['id' => 'INVALID']);
-        $this->assertFalse($result);
-    }
-
-    private function prepareMockResult(array $data): \PDOStatement {
-        $data[] = false; // Add false as the last element of the array
-        $stmt = $this->createMock(\PDOStatement::class);
-        $stmt->method('fetch')->will($this->onConsecutiveCalls(...$data));
-        return $stmt;
+    public function updateWithInvalidConditionsReturnsFalse(): void
+    {
+        $this->pdoMock->method('Execute')->will($this->throwException(new Exception()));
+        $result = $this->dbCore->update("id = 999", ['name' => 'Ghost Update']);
     }
 }

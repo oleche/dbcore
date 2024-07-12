@@ -162,7 +162,6 @@ The `QueryDeleteBuilder` facilitates the creation of DELETE queries. It supports
 
 
 These builders abstract the complexity of query syntax, making your code cleaner and easier to maintain.
-```
 
 For more advanced features and usage, refer to the specific methods and properties within the DBCore engine's source code. The engine is designed to be extendable, allowing for customization to fit more complex application requirements.
 
