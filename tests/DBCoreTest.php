@@ -63,4 +63,15 @@ class DBCoreTest extends TestCase
         $this->pdoMock->method('Execute')->will($this->throwException(new Exception()));
         $result = $this->dbCore->update("id = 999", ['name' => 'Ghost Update']);
     }
+
+    private function prepareMockResult(array $data): array
+    {
+        // Convert the input array into a format that mimics the database fetch operation.
+        // This example assumes a fetch style that returns an associative array for each row.
+        $result = [];
+        foreach ($data as $row) {
+            $result[] = (object)$row; // Convert each associative array to an object
+        }
+        return $result;
+    }
 }
