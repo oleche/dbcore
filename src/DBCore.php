@@ -650,20 +650,29 @@ class DBCore extends DataBaseManager
         try {
             $this->beginTransaction();
 
+            $query = new QueryUpdateBuilder();
             if (empty($set)) {
-                $query = $this->assembleQuery($this->columns);
+                $query = $query->withValues($this->columns);
             } else {
-                $query = $this->assembleQuery($set);
+                $query = $query->withValues($set);
             }
 
             $key_names = "";
             if (empty($from)) {
-                $key_names = $this->assembleQuery($this->the_key, false, true, $this->columns);
+                foreach ($this->the_key as $key => $value) {
+                    $the_key = $key;
+                    if (is_numeric($the_key)) {
+                        $the_key = $value;
+                    }
+                    $query = $query->withWhere($key, $this->columns[$the_key]);
+                }
             } else {
-                $key_names = $this->assembleQuery($from, false, true);
+                foreach ($from as $key => $value) {
+                    $query = $query->withWhere($key, $value);
+                }
             }
 
-            $sql = $this->buildUpdate($this->db_name, $query, $key_names);
+            $sql = $query->toSql();
 
             if (!is_null($conditions)) {
                 $sql .= ' AND ' . $conditions;
@@ -676,9 +685,8 @@ class DBCore extends DataBaseManager
             $this->commit();
         } catch (Exception $e) {
             $this->rollBack();
-            $this->err_data = $e->getMessage();
+            $this->err_data = "(UPDATE) " . $e->getMessage();
             return false;
-            //throw new Exception("(UPDATE) " . $e->getMessage());
         }
         return true;
     }
@@ -696,18 +704,15 @@ class DBCore extends DataBaseManager
         try {
             $this->beginTransaction();
 
-            $query = $this->assembleQuery($this->columns, true);
-            $columns = $this->assembleInsertColumns();
+            $query = $this->assemblyInsertUsingBuilder($this->db_name, $this->columns);
 
-            $sql = $this->buildInsert($this->db_name, $columns, $query);
-
-            $this->db->Execute($sql);
+            $this->db->Execute($query->toSql());
 
             $result = $this->db->LastID();
             $this->commit();
         } catch (Exception $e) {
             $this->rollBack();
-            $this->err_data = $e->getMessage();
+            $this->err_data = "(INSERT) " . $e->getMessage();
             return false;
         }
         return $result;
@@ -845,22 +850,6 @@ class DBCore extends DataBaseManager
                 break;
         }
         return $type;
-    }
-
-    private function assembleInsertColumns()
-    {
-        $query = "";
-        $count = 0;
-
-        foreach ($this->columns as $key => $value) {
-            if ($count > 0) {
-                $query .= ', ';
-            }
-            $query .= $key;
-            $count++;
-        }
-
-        return $query;
     }
 
     /**

@@ -8,6 +8,9 @@
 
 namespace Geekcow\Dbcore\utils;
 
+use Geekcow\Dbcore\QueryBuilder;
+use Geekcow\Dbcore\QueryInsertBuilder;
+
 class QueryUtils
 {
     protected function buildDelete($dbname, $key_names)
@@ -32,6 +35,13 @@ class QueryUtils
         } else {
             return $this->iterateOverKeys($columns, $columns, $is_insert, $is_from, $modifier);
         }
+    }
+
+    protected function assemblyInsertUsingBuilder(string $table, array $columns): QueryBuilder
+    {
+        $qb = new QueryInsertBuilder();
+        $qb = $qb->withTable($table);
+        return $qb->withColumnValues($columns);
     }
 
     private function iterateOverKeys($columns, $values, $is_insert = false, $is_from = false, $modifier = "")

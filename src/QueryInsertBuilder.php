@@ -42,6 +42,15 @@ class QueryInsertBuilder extends QueryBuilder
         return $this;
     }
 
+    public function withColumnValues(array $values): QueryInsertBuilder
+    {
+        foreach ($values as $column => $value) {
+            $this->columns[] = $column;
+            $this->values[] = $this->filterValue($value);
+        }
+        return $this;
+    }
+
     public function withColumnValue(string $column, $value): QueryInsertBuilder
     {
         $this->columns[] = $column;

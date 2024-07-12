@@ -4,6 +4,7 @@ dbcore.server = localhost
 dbcore.db_user = root
 dbcore.db_pass = 'r00t'
 dbcore.database = demo
+dbcore.port = 3306
 
 [display_configuration]
 dbcore.ipp = 25
