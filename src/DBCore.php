@@ -36,13 +36,13 @@ class DBCore extends DataBaseManager
 
     // constructor
     public function __construct(
-        $connection,
-        $db_name,
-        $db_columns,
-        $key,
-        $foreigns = null,
-        $ipp = 25,
-        $fullmap = array()
+        DataBase $connection,
+        string $db_name,
+        array $db_columns,
+        array $key,
+        array $foreigns = null,
+        int $ipp = 25,
+        array $fullmap = array()
     ) {
         parent::__construct($connection);
         $this->db_name = $db_name;

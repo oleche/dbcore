@@ -13,7 +13,7 @@ class DBCoreTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->pdoMock = $this->createMock(\PDO::class);
+        $this->pdoMock = $this->createMock(DataBase::class);
         $this->dbCore = new DBCore($this->pdoMock, 'test_table', ['id', 'name'], 'id');
     }
 
