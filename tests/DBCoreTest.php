@@ -64,14 +64,26 @@ class DBCoreTest extends TestCase
         $result = $this->dbCore->update("id = 999", ['name' => 'Ghost Update']);
     }
 
-    private function prepareMockResult(array $data): array
+    private function prepareMockResult(array $data): \PDOStatement
     {
-        // Convert the input array into a format that mimics the database fetch operation.
-        // This example assumes a fetch style that returns an associative array for each row.
-        $result = [];
-        foreach ($data as $row) {
-            $result[] = (object)$row; // Convert each associative array to an object
-        }
-        return $result;
+        $stmt = $this->createMock(\PDOStatement::class);
+
+        // Mocking fetch() to return each row sequentially
+        $stmt->method('fetch')
+            ->willReturnCallback(function ($fetchStyle = \PDO::FETCH_ASSOC) use (&$data) {
+                $row = current($data);
+                next($data);
+                return $row ? (object)$row : false;
+            });
+
+        // Mocking fetchAll() to return all rows at once
+        $stmt->method('fetchAll')
+            ->willReturnCallback(function ($fetchStyle = \PDO::FETCH_ASSOC) use ($data) {
+                return array_map(function ($row) {
+                    return (object)$row;
+                }, $data);
+            });
+
+        return $stmt;
     }
 }
