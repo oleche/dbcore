@@ -24,8 +24,8 @@ class DBCoreTest extends TestCase
             ['id' => 2, 'name' => 'Jane Doe']
         ]));
         $results = $this->dbCore->fetch("name LIKE '%Doe%'");
-        $this->assertCount(1, $results);
-        $this->assertEquals('John Doe', $results[0]['name']);
+        $this->assertCount(2, $results->columns);
+        $this->assertEquals('John Doe', $results->columns[0]['name']);
     }
 
     public function testFetchWithNoResultsReturnsEmptyArray(): void
