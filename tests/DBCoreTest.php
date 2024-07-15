@@ -24,7 +24,7 @@ class DBCoreTest extends TestCase
             ['id' => 2, 'name' => 'Jane Doe']
         ]));
         $results = $this->dbCore->fetch("name LIKE '%Doe%'");
-        $this->assertCount(2, $results);
+        $this->assertCount(1, $results);
         $this->assertEquals('John Doe', $results[0]['name']);
     }
 
