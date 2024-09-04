@@ -691,6 +691,9 @@ class DBCore extends DataBaseManager
             $this->beginTransaction();
 
             $query = new QueryUpdateBuilder();
+
+            $query = $query->withTable($this->db_name);
+
             if (empty($set)) {
                 $query = $query->withValues($this->columns);
             } else {
@@ -704,7 +707,7 @@ class DBCore extends DataBaseManager
                     if (is_numeric($the_key)) {
                         $the_key = $value;
                     }
-                    $query = $query->withWhere($key, $this->columns[$the_key]);
+                    $query = $query->withWhere($value, $this->columns[$the_key]);
                 }
             } else {
                 foreach ($from as $key => $value) {

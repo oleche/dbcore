@@ -38,7 +38,7 @@ class QueryUpdateBuilder extends QueryBuilder
 
     private function buildAssignmentCondition(string $column, $value, bool $is_column_value = false): string
     {
-        $value = (!$is_column_value) ? $this->filterValue($value) : $value;
+        $value = ($is_column_value) ? $this->filterValue($value) : $value;
         return $column . ' = ' . $value;
     }
 
