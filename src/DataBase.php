@@ -77,7 +77,6 @@ class DataBase
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         $result = $this->db->query("SET NAMES 'utf8';");
-        $result = $this->db->query("SET CHARACTER_SET 'utf8';");
 
         $_db_name = "`" . str_replace("`", "``", $_db_name) . "`";
         $this->db->query("CREATE DATABASE IF NOT EXISTS $_db_name;");
