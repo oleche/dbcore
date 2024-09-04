@@ -76,6 +76,8 @@ class DataBase
         $this->db = new PDO("mysql:host=$_host;port=$_db_port", $_username, $_password) or die("cannot connect");
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+        $this->db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+
         $result = $this->db->query("SET NAMES 'utf8';");
 
         $_db_name = "`" . str_replace("`", "``", $_db_name) . "`";
