@@ -75,8 +75,6 @@ class DataBase
         // Connect to server and select databse.
         $this->db = new PDO("mysql:host=$_host;port=$_db_port", $_username, $_password) or die("cannot connect");
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $this->db->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
-        $this->db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
 
         $result = $this->db->query("SET NAMES 'utf8';");
 
@@ -131,8 +129,6 @@ class DataBase
      */
     public function beginTransaction()
     {
-        $this->db->setAttribute(PDO::ATTR_AUTOCOMMIT, 0);
-        $this->db->query("START TRANSACTION ISOLATION LEVEL SERIALIZATION;");
         $this->db->beginTransaction();
     }
 

@@ -165,7 +165,17 @@ class DBCore extends DataBaseManager
         //You can echo the sql query here: echo '<b>'.$sql.'</b><br/>';
 
         try {
-            $result = $this->db->Execute($sql);
+            try {
+                $this->beginTransaction();
+
+                $result = $this->db->Execute($sql);
+
+                $this->commit();
+            } catch (Exception $e) {
+                $this->rollBack();
+                $this->err_data = $e->getMessage();
+                return false;
+            }
 
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 //$row = array_map('utf8_encode', $row);
@@ -312,7 +322,17 @@ class DBCore extends DataBaseManager
         $retorno = array();
 
         try {
-            $result = $this->db->Execute($sql);
+            try {
+                $this->beginTransaction();
+
+                $result = $this->db->Execute($sql);
+
+                $this->commit();
+            } catch (Exception $e) {
+                $this->rollBack();
+                $this->err_data = $e->getMessage();
+                return false;
+            }
 
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 //$row = array_map('utf8_encode', $row);
@@ -427,7 +447,17 @@ class DBCore extends DataBaseManager
                 return false;
             } else {
                 //echo $sql.'<br/>';
-                $result = $this->db->Execute($sql);
+                try {
+                    $this->beginTransaction();
+
+                    $result = $this->db->Execute($sql);
+
+                    $this->commit();
+                } catch (Exception $e) {
+                    $this->rollBack();
+                    $this->err_data = $e->getMessage();
+                    return false;
+                }
 
                 if ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                     //$row = array_map('utf8_encode', $row);
@@ -549,7 +579,17 @@ class DBCore extends DataBaseManager
 
 
         try {
-            $result = $this->db->Execute($sql);
+            try {
+                $this->beginTransaction();
+
+                $result = $this->db->Execute($sql);
+
+                $this->commit();
+            } catch (Exception $e) {
+                $this->rollBack();
+                $this->err_data = $e->getMessage();
+                return false;
+            }
 
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 $retorno[] = $row;
