@@ -58,7 +58,7 @@ class QueryUtils
             if ($count > 0) {
                 $query .= $is_from ? ' AND ' : ', ';
             }
-            $query .= $this->keyValuePair($modifier . $the_key, $values[$the_key], $is_insert);
+            $query .= $this->keyValuePair($modifier . $the_key, $values[$the_key] ?? null, $is_insert);
             $count++;
         }
 

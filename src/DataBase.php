@@ -119,7 +119,7 @@ class DataBase
      */
     public function checkSQL($param)
     {
-        $param = stripslashes($param);
+        $param = stripslashes((string)$param);
         $param = $this->db->quote($param);
         return $param;
     }
@@ -133,21 +133,26 @@ class DataBase
     }
 
     /**
-     * Commits the current transaction and sets the autocommit mode back to true.
+     * Commits the current transaction, if there is still one open.
      */
     public function commit()
     {
-        $this->db->setAttribute(PDO::ATTR_AUTOCOMMIT, 1);
-        $this->db->commit();
+        // Since PHP 8.0 pdo_mysql reports the real server transaction state, so statements that
+        // cause an implicit commit (CREATE/ALTER TABLE, ...) leave no transaction to commit and
+        // PDO::commit() would throw "There is no active transaction".
+        if ($this->db->inTransaction()) {
+            $this->db->commit();
+        }
     }
 
     /**
-     * Rolls back the current transaction and sets the autocommit mode back to true.
+     * Rolls back the current transaction, if there is still one open.
      */
     public function rollback()
     {
-        $this->db->setAttribute(PDO::ATTR_AUTOCOMMIT, 1);
-        $this->db->rollBack();
+        if ($this->db->inTransaction()) {
+            $this->db->rollBack();
+        }
     }
 
     /**

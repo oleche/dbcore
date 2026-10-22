@@ -65,6 +65,6 @@ class Searchy
 
     private static function buildComparisson($comparer)
     {
-        return self::$COMPARATORS[strtolower($comparer)];
+        return self::$COMPARATORS[strtolower($comparer)] ?? "";
     }
 }

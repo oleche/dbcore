@@ -40,7 +40,7 @@ class DBCore extends DataBaseManager
         string $db_name,
         array $db_columns,
         array $key,
-        array $foreigns = null,
+        ?array $foreigns = null,
         int $ipp = 25,
         array $fullmap = array()
     ) {
@@ -184,35 +184,35 @@ class DBCore extends DataBaseManager
                     foreach ($this->columns_defs as $definitions) {
                         if (in_array($definitions, $this->foreign_keys)) {
                             if ($this->foreign_relations[$definitions][1] == $this::SELF) {
-                                if (is_null($row[$definitions])) {
-                                    $rowobj->columns[$definitions] = $row[$definitions];
+                                if (is_null($row[$definitions] ?? null)) {
+                                    $rowobj->columns[$definitions] = $row[$definitions] ?? null;
                                 } else {
                                     //can go to further entities or just stays in one level
                                     if ($this->recursive) {
                                         $this->fetch_id(
                                             array(
-                                                $this->foreign_relations[$definitions][0] => $row[$definitions]
+                                                $this->foreign_relations[$definitions][0] => $row[$definitions] ?? null
                                             )
                                         );
                                         $rowobj->columns[$definitions] = $this->columns;
                                     } else {
-                                        $rowobj->columns[$definitions] = $row[$definitions];
+                                        $rowobj->columns[$definitions] = $row[$definitions] ?? null;
                                     }
                                 }
                             } else {
                                 if ($this->recursive) {
                                     $this->foreign_relations[$definitions][1]->fetch_id(
                                         array(
-                                            $this->foreign_relations[$definitions][0] => $row[$definitions]
+                                            $this->foreign_relations[$definitions][0] => $row[$definitions] ?? null
                                         )
                                     );
                                     $rowobj->columns[$definitions] = $this->foreign_relations[$definitions][1]->columns;
                                 } else {
-                                    $rowobj->columns[$definitions] = $row[$definitions];
+                                    $rowobj->columns[$definitions] = $row[$definitions] ?? null;
                                 }
                             }
                         } else {
-                            $rowobj->columns[$definitions] = $row[$definitions];
+                            $rowobj->columns[$definitions] = $row[$definitions] ?? null;
                         }
                     }
                     $retorno[] = $rowobj;
@@ -249,7 +249,7 @@ class DBCore extends DataBaseManager
         $base_table = $base_letter;
 
         foreach ($objs as $obj) {
-            $base_letter++;
+            $base_letter = chr(ord($base_letter) + 1);
             $tables[] = $obj->db_name . " " . $base_letter;
             foreach ($this->foreign_relations as $fkey => $value) {
                 if ($value[0] == $obj->db_name) {
@@ -343,35 +343,35 @@ class DBCore extends DataBaseManager
                     } else {
                         if (in_array($defs, $this->foreign_keys)) {
                             if ($this->foreign_relations[$defs][1] == $this::SELF) {
-                                if (is_null($row[$defs])) {
-                                    $rowobj->columns[$defs] = $row[$defs];
+                                if (is_null($row[$defs] ?? null)) {
+                                    $rowobj->columns[$defs] = $row[$defs] ?? null;
                                 } else {
                                     //can go to further entities or just stays in one level
                                     if ($this->recursive) {
                                         $this->fetch_id(
                                             array(
-                                                $this->foreign_relations[$defs][0] => $row[$defs]
+                                                $this->foreign_relations[$defs][0] => $row[$defs] ?? null
                                             )
                                         );
                                         $rowobj->columns[$defs] = $this->foreign_relations[$defs][1]->columns;
                                     } else {
-                                        $rowobj->columns[$defs] = $row[$defs];
+                                        $rowobj->columns[$defs] = $row[$defs] ?? null;
                                     }
                                 }
                             } else {
                                 if ($this->recursive) {
                                     $this->foreign_relations[$defs][1]->fetch_id(
                                         array(
-                                            $this->foreign_relations[$defs][0] => $row[$defs]
+                                            $this->foreign_relations[$defs][0] => $row[$defs] ?? null
                                         )
                                     );
                                     $rowobj->columns[$defs] = $this->foreign_relations[$defs][1]->columns;
                                 } else {
-                                    $rowobj->columns[$defs] = $row[$defs];
+                                    $rowobj->columns[$defs] = $row[$defs] ?? null;
                                 }
                             }
                         } else {
-                            $rowobj->columns[$defs] = $row[$defs];
+                            $rowobj->columns[$defs] = $row[$defs] ?? null;
                         }
                     }
                 }
@@ -403,7 +403,7 @@ class DBCore extends DataBaseManager
 
         $key_names = "";
 
-        if (count($id) > 0) {
+        if (is_array($id) && count($id) > 0) {
             $key_names = $this->assembleQuery($this->the_key, false, true, $id);
         }
 
@@ -468,35 +468,35 @@ class DBCore extends DataBaseManager
                         if (in_array($defs, $this->foreign_keys)) {
                             //if its a relationship with its own entity
                             if ($this->foreign_relations[$defs][1] == $this::SELF) {
-                                if (is_null($row[$defs])) {
-                                    $this->columns[$defs] = $row[$defs];
+                                if (is_null($row[$defs] ?? null)) {
+                                    $this->columns[$defs] = $row[$defs] ?? null;
                                 } else {
                                     //can go to further entities or just stays in one level
                                     if ($this->recursive) {
-                                        $this->columns[$defs][1]->fetch_id(
+                                        $this->foreign_relations[$defs][1]->fetch_id(
                                             array(
-                                                $this->foreign_relations[$defs][0] => $row[$defs]
+                                                $this->foreign_relations[$defs][0] => $row[$defs] ?? null
                                             )
                                         );
                                         $this->columns[$defs] = $this->foreign_relations[$defs][1]->columns;
                                     } else {
-                                        $this->columns[$defs] = $row[$defs];
+                                        $this->columns[$defs] = $row[$defs] ?? null;
                                     }
                                 }
                             } else {
                                 if ($this->recursive) {
                                     $this->foreign_relations[$defs][1]->fetch_id(
                                         array(
-                                            $this->foreign_relations[$defs][0] => $row[$defs]
+                                            $this->foreign_relations[$defs][0] => $row[$defs] ?? null
                                         )
                                     );
                                     $this->columns[$defs] = $this->foreign_relations[$defs][1]->columns;
                                 } else {
-                                    $this->columns[$defs] = $row[$defs];
+                                    $this->columns[$defs] = $row[$defs] ?? null;
                                 }
                             }
                         } else {
-                            $this->columns[$defs] = $row[$defs];
+                            $this->columns[$defs] = $row[$defs] ?? null;
                         }
                     }
                 } else {
@@ -614,7 +614,7 @@ class DBCore extends DataBaseManager
     {
         $count = 0;
         $query = "";
-        foreach ($this->uniqueness as $key) {
+        foreach ((array)$uniquenessKeys as $key) {
             if ($count > 0) {
                 $query .= " AND ";
             }
@@ -707,7 +707,7 @@ class DBCore extends DataBaseManager
                     if (is_numeric($the_key)) {
                         $the_key = $value;
                     }
-                    $query = $query->withWhere($value, $this->columns[$the_key]);
+                    $query = $query->withWhere($value, $this->columns[$the_key] ?? null);
                 }
             } else {
                 foreach ($from as $key => $value) {

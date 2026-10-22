@@ -146,10 +146,13 @@ class Entity extends DBCore
      */
     public function set_paging(&$class, $params)
     {
-        $this->per_page = (isset($params['per_page']) && trim($params['per_page']) != '') ?
-            $params['per_page'] :
-            $this->ipp;
-        $this->page = (isset($params['page']) && trim($params['page']) != '') ? $params['page'] : 1;
+        // Cast the query string values: PHP 8 throws on arithmetic with non numeric strings and on
+        // divisions by zero, so non numeric or empty values fall back to the defaults.
+        $per_page = (isset($params['per_page']) && is_scalar($params['per_page'])) ? (int)$params['per_page'] : 0;
+        $this->per_page = ($per_page > 0) ? $per_page : $this->ipp;
+        $this->page = (isset($params['page']) && is_scalar($params['page']) && trim($params['page']) != '') ?
+            (int)$params['page'] :
+            1;
         if ($this->page <= 0) {
             $this->page = 0;
         } else {
