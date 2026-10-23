@@ -228,7 +228,8 @@ class DBCore extends DataBaseManager
         }
         $this->fetched_result = array();
         foreach ($retorno as $k => $q_item) {
-            $this->fetched_result[] = $q_item->columns;
+            // custom queries return plain rows instead of entities
+            $this->fetched_result[] = is_object($q_item) ? $q_item->columns : $q_item;
         }
         return $retorno;
     }
