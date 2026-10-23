@@ -72,7 +72,8 @@ class Entity extends DBCore
             }
         }
         //end of exploration
-        $table = $this->fromCamelCase($table_name);
+        // class names become snake case tables; names with hyphens (curso-encargado) are already table names
+        $table = (strpos((string)$table_name, '-') !== false) ? $table_name : $this->fromCamelCase($table_name);
 
         parent::__construct($this->connection, $table, $col, $key, $foreign, $this->ipp, $this->mapping);
 

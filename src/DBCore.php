@@ -114,9 +114,9 @@ class DBCore extends DataBaseManager
                 $query = " WHERE " . $query;
             }
 
-            $sql = 'SELECT * FROM ' . $this->db_name . '' . $query . ' ' . $order_text;
+            $sql = 'SELECT * FROM ' . $this->quotedTable() . '' . $query . ' ' . $order_text;
             $this->count = $this->fixedCount(
-                'SELECT count(*) FROM ' . $this->db_name . '' . $query . ' ' . $order_text . ';',
+                'SELECT count(*) FROM ' . $this->quotedTable() . '' . $query . ' ' . $order_text . ';',
                 $params
             );
             $sql .= $this->buildLimit($page) . ';';
@@ -231,12 +231,12 @@ class DBCore extends DataBaseManager
         $fobjs = array();
 
         $base_letter = "A";
-        $tables[] = $this->db_name . " " . $base_letter;
+        $tables[] = $this->quotedTable() . " " . $base_letter;
         $base_table = $base_letter;
 
         foreach ($objs as $obj) {
             $base_letter = chr(ord($base_letter) + 1);
-            $tables[] = $obj->db_name . " " . $base_letter;
+            $tables[] = $this->quotedTable($obj->db_name) . " " . $base_letter;
             foreach ($this->foreign_relations as $fkey => $value) {
                 if ($value[0] == $obj->db_name) {
                     $fobjs[] = $fkey;
@@ -386,9 +386,9 @@ class DBCore extends DataBaseManager
 
         $order_text = $this->buildOrder($order, $asc);
 
-        $sql = 'SELECT * FROM ' . $this->db_name . ' WHERE ' . $key_names . ' ' . $order_text;
+        $sql = 'SELECT * FROM ' . $this->quotedTable() . ' WHERE ' . $key_names . ' ' . $order_text;
         $this->count = $this->fixedCount(
-            'SELECT count(*) FROM ' . $this->db_name . ' WHERE ' . $key_names . ' ' . $order_text . ';',
+            'SELECT count(*) FROM ' . $this->quotedTable() . ' WHERE ' . $key_names . ' ' . $order_text . ';',
             $params
         );
         $sql .= $this->buildLimit($page) . ';';
@@ -525,7 +525,7 @@ class DBCore extends DataBaseManager
         $retorno = array();
         if (!$custom) {
             $sql = 'SELECT count(*) as count ' . $group_query .
-                ' FROM ' . $this->db_name . ' ' . $query . ' ' . $group_text . ';';
+                ' FROM ' . $this->quotedTable() . ' ' . $query . ' ' . $group_text . ';';
         } else {
             $sql = $query;
         }
@@ -579,7 +579,7 @@ class DBCore extends DataBaseManager
         }
 
         $items = $this->fixedCount(
-            'SELECT count(*) FROM ' . $this->db_name . ' WHERE ' . implode(' AND ', $conditions) . ';',
+            'SELECT count(*) FROM ' . $this->quotedTable() . ' WHERE ' . implode(' AND ', $conditions) . ';',
             $params
         );
 
@@ -610,7 +610,7 @@ class DBCore extends DataBaseManager
             $key_names = $this->assembleQuery($this->the_key, false, true, $this->columns, "a.", $params);
         }
 
-        $sql = $this->buildDelete($this->db_name, $key_names);
+        $sql = $this->buildDelete($this->quotedTable(), $key_names);
 
         try {
             $this->beginTransaction();
@@ -646,7 +646,7 @@ class DBCore extends DataBaseManager
 
             $query = new QueryUpdateBuilder();
 
-            $query = $query->withTable($this->db_name);
+            $query = $query->withTable($this->quotedTable());
 
             if (empty($set)) {
                 $query = $query->withValues($this->columns);
@@ -701,7 +701,7 @@ class DBCore extends DataBaseManager
         try {
             $this->beginTransaction();
 
-            $query = $this->assemblyInsertUsingBuilder($this->db_name, $this->columns);
+            $query = $this->assemblyInsertUsingBuilder($this->quotedTable(), $this->columns);
 
             $this->db->Execute($query->toSql(), $query->getParams());
 
@@ -718,7 +718,7 @@ class DBCore extends DataBaseManager
     private function tableExists()
     {
         try {
-            $sql = "SELECT 1 FROM $this->db_name LIMIT 1";
+            $sql = "SELECT 1 FROM " . $this->quotedTable() . " LIMIT 1";
             $result = $this->db->Execute($sql);
         } catch (Exception $e) {
             return false;
@@ -893,6 +893,24 @@ class DBCore extends DataBaseManager
     public function transaction(callable $callback)
     {
         return $this->db->transaction($callback);
+    }
+
+    /**
+     * Table name quoted as an identifier, so names such as curso-encargado work; db.table is quoted per part
+     * and names that are already quoted are left alone
+     *
+     * @param string|null $name defaults to this table
+     * @return string
+     */
+    protected function quotedTable($name = null)
+    {
+        $name = (string)($name ?? $this->db_name);
+        if ($name === '' || $name[0] === '`') {
+            return $name;
+        }
+        return implode('.', array_map(function ($part) {
+            return '`' . str_replace('`', '``', $part) . '`';
+        }, explode('.', $name)));
     }
 
     private function newRow()
