@@ -31,22 +31,22 @@ class QueryInsertBuilder extends QueryBuilder
     public function withValues(array $values): QueryInsertBuilder
     {
         foreach ($values as $value) {
-            $this->values[] = $this->filterValue($value);
+            $this->withValue($value);
         }
         return $this;
     }
 
     public function withValue($value): QueryInsertBuilder
     {
-        $this->values[] = $this->filterValue($value);
+        $this->values[] = '?';
+        $this->params[] = $value;
         return $this;
     }
 
     public function withColumnValues(array $values): QueryInsertBuilder
     {
         foreach ($values as $column => $value) {
-            $this->columns[] = $column;
-            $this->values[] = $this->filterValue($value);
+            $this->withColumnValue($column, $value);
         }
         return $this;
     }
@@ -54,8 +54,7 @@ class QueryInsertBuilder extends QueryBuilder
     public function withColumnValue(string $column, $value): QueryInsertBuilder
     {
         $this->columns[] = $column;
-        $this->values[] = $this->filterValue($value);
-        return $this;
+        return $this->withValue($value);
     }
 
     public function toSql(): string

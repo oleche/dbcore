@@ -15,11 +15,28 @@ abstract class QueryBuilder
     protected $conditions;
 
     /**
-     * Generates the SQL query string.
+     * Values bound to the ? placeholders of the conditions, in order
+     *
+     * @var array
+     */
+    protected $params = [];
+
+    /**
+     * Generates the SQL query string, with ? placeholders for the values (see getParams()).
      *
      * @return string The constructed SQL query.
      */
     abstract public function toSql(): string;
+
+    /**
+     * Values for the ? placeholders of toSql(), in order. DBCore binds them when the builder is executed.
+     *
+     * @return array
+     */
+    public function getParams(): array
+    {
+        return $this->params;
+    }
 
     /**
      * Adds a condition to the query.
@@ -43,9 +60,11 @@ abstract class QueryBuilder
      */
     public function withSearchy(array $params): QueryBuilder
     {
-        $search = Searchy::assemblySearch($params);
+        $bind = [];
+        $search = Searchy::assemblySearch($params, $bind);
         if ($search != "") {
             $this->addToCondition($search, "");
+            $this->params = array_merge($this->params, $bind);
         }
         return $this;
     }
@@ -62,7 +81,10 @@ abstract class QueryBuilder
      */
     public function withWhere(string $column, $value, string $comparator = '=', bool $and = true, bool $is_column_value = false): QueryBuilder
     {
-        $value = (!$is_column_value) ? $this->filterValue($value) : $value;
+        if (!$is_column_value) {
+            $this->params[] = $value;
+            $value = '?';
+        }
         $condition_predicate =  ' ' . $comparator . ' ' . $value;
 
         $this->addToCondition($column, $condition_predicate, $and);
@@ -81,7 +103,9 @@ abstract class QueryBuilder
      */
     public function withWhereBetween(string $column, $from, $to, $and = true): QueryBuilder
     {
-        $condition_predicate = ' BETWEEN ' .  $this->filterValue($from) . " AND " . $this->filterValue($to);
+        $this->params[] = $from;
+        $this->params[] = $to;
+        $condition_predicate = ' BETWEEN ? AND ?';
 
         $this->addToCondition($column, $condition_predicate, $and);
 
@@ -98,20 +122,21 @@ abstract class QueryBuilder
         return $condition_string;
     }
 
+    /**
+     * Writes a value as an escaped SQL literal (strings are always quoted). The builders bind values instead.
+     */
     public function filterValue($value)
     {
-        return
-            (($this->getType($value) == 'boolean'
-                || $this->getType($value) == 'float'
-                || $this->getType($value) == 'integer'
-                || $this->getType($value) == 'numeric'
-                || $this->getType($value) == 'NULL') ? '' : "'")
-            . (($this->getType($value) == 'NULL') ? 'NULL' : $value)
-            . (($this->getType($value) == 'boolean'
-                || $this->getType($value) == 'float'
-                || $this->getType($value) == 'integer'
-                || $this->getType($value) == 'numeric'
-                || $this->getType($value) == 'NULL') ? '' : "'");
+        if (is_null($value)) {
+            return 'NULL';
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string)$value;
+        }
+        return DataBase::escapeLiteral(is_array($value) ? json_encode($value) : $value);
     }
 
     public function getType($var): string

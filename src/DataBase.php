@@ -27,6 +27,7 @@ class DataBase
     private $db_name; // Name of the database to connect to.
     private $db_port; // Port number for the database connection.
     private $db; // PDO instance for database operations.
+    private $transaction_level = 0; // Depth of nested beginTransaction() calls.
 
     protected static $instance = null;
 
@@ -72,11 +73,11 @@ class DataBase
         $this->db_name = $_db_name;
         $this->db_port = $_db_port;
 
-        // Connect to server and select databse.
-        $this->db = new PDO("mysql:host=$_host;port=$_db_port", $_username, $_password) or die("cannot connect");
+        // Connect to server and select databse. The charset goes in the DSN (instead of SET NAMES) so PDO
+        // escapes the bound values for the right connection charset.
+        $this->db = new PDO("mysql:host=$_host;port=$_db_port;charset=utf8", $_username, $_password)
+            or die("cannot connect");
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $result = $this->db->query("SET NAMES 'utf8';");
 
         $_db_name = "`" . str_replace("`", "``", $_db_name) . "`";
         $this->db->query("CREATE DATABASE IF NOT EXISTS $_db_name;");
@@ -84,21 +85,76 @@ class DataBase
     }
 
     /**
-     * Executes a SQL query using the PDO instance.
+     * Executes a SQL query as a prepared statement, binding $params to its ? placeholders in order.
      * Throws an exception if the query execution fails.
      *
      * @param string $sql The SQL query to execute.
+     * @param array $params Values for the ? placeholders.
      * @return PDOStatement The PDOStatement object resulting from the execution.
      * @throws Exception If the query execution fails.
      */
-    public function execute($sql)
+    public function execute($sql, array $params = array())
     {
         $stmt = $this->db->prepare($sql);
+        $position = 1;
+        foreach ($params as $value) {
+            $this->bindParam($stmt, $position++, $value);
+        }
         // si existe un error se levanta una excepci&#65533;n
         if (!$stmt->execute()) {
             throw new Exception($stmt->errorInfo()[0] . ": " . $stmt->errorInfo()[2]);
         }
         return $stmt;
+    }
+
+    /**
+     * Binds a value by its PHP type: null as NULL, booleans as 1/0, integers as integers and everything else as
+     * text, so the column type decides the conversion (a phone like "0123" keeps its leading zero)
+     */
+    private function bindParam(PDOStatement $stmt, $position, $value)
+    {
+        if (is_null($value)) {
+            $stmt->bindValue($position, null, PDO::PARAM_NULL);
+        } elseif (is_bool($value)) {
+            $stmt->bindValue($position, $value ? 1 : 0, PDO::PARAM_INT);
+        } elseif (is_int($value)) {
+            $stmt->bindValue($position, $value, PDO::PARAM_INT);
+        } else {
+            if (is_array($value)) {
+                $value = json_encode($value);
+            }
+            $stmt->bindValue($position, (string)$value, PDO::PARAM_STR);
+        }
+    }
+
+    /**
+     * Quotes and escapes a value for the connection charset (including the surrounding quotes).
+     *
+     * @param string $value
+     * @return string
+     */
+    public function quote($value)
+    {
+        return $this->db->quote((string)$value);
+    }
+
+    /**
+     * Escapes a string literal the way MySQL does for utf8/latin1 connections, for code without a connection.
+     *
+     * @param string $value
+     * @return string the quoted literal
+     */
+    public static function escapeLiteral($value)
+    {
+        return "'" . strtr((string)$value, array(
+            "\\" => "\\\\",
+            "\0" => "\\0",
+            "\n" => "\\n",
+            "\r" => "\\r",
+            "'" => "\\'",
+            '"' => '\\"',
+            "\x1a" => "\\Z",
+        )) . "'";
     }
 
     /**
@@ -125,34 +181,93 @@ class DataBase
     }
 
     /**
-     * Begins a transaction by setting the autocommit mode to false and starting the transaction.
+     * Begins a transaction. Calls made while a transaction is open are nested with savepoints, so the queries of
+     * every model join the outermost transaction and an inner rollback only undoes its own part.
      */
     public function beginTransaction()
     {
-        $this->db->beginTransaction();
+        $this->syncTransactionLevel();
+        if ($this->transaction_level == 0) {
+            $this->db->beginTransaction();
+        } else {
+            $this->db->exec("SAVEPOINT dbcore_" . $this->transaction_level);
+        }
+        $this->transaction_level++;
     }
 
     /**
-     * Commits the current transaction, if there is still one open.
+     * Commits the current (nested) transaction, if there is still one open.
      */
     public function commit()
     {
-        // Since PHP 8.0 pdo_mysql reports the real server transaction state, so statements that
-        // cause an implicit commit (CREATE/ALTER TABLE, ...) leave no transaction to commit and
-        // PDO::commit() would throw "There is no active transaction".
-        if ($this->db->inTransaction()) {
+        if (!$this->syncTransactionLevel()) {
+            return;
+        }
+        $this->transaction_level--;
+        if ($this->transaction_level == 0) {
             $this->db->commit();
+        } else {
+            $this->db->exec("RELEASE SAVEPOINT dbcore_" . $this->transaction_level);
         }
     }
 
     /**
-     * Rolls back the current transaction, if there is still one open.
+     * Rolls back the current (nested) transaction, if there is still one open.
      */
     public function rollback()
     {
-        if ($this->db->inTransaction()) {
-            $this->db->rollBack();
+        if (!$this->syncTransactionLevel()) {
+            return;
         }
+        $this->transaction_level--;
+        if ($this->transaction_level == 0) {
+            $this->db->rollBack();
+        } else {
+            $this->db->exec("ROLLBACK TO SAVEPOINT dbcore_" . $this->transaction_level);
+        }
+    }
+
+    /**
+     * Runs the callback inside a transaction: commits when it returns, rolls back when it returns false or
+     * throws (the exception is re-thrown).
+     *
+     * @param callable $callback
+     * @return mixed the value returned by the callback
+     */
+    public function transaction(callable $callback)
+    {
+        $this->beginTransaction();
+        try {
+            $result = $callback();
+        } catch (\Throwable $t) {
+            $this->rollback();
+            throw $t;
+        }
+        if ($result === false) {
+            $this->rollback();
+        } else {
+            $this->commit();
+        }
+        return $result;
+    }
+
+    /**
+     * Since PHP 8.0 pdo_mysql reports the real server transaction state: statements that commit implicitly
+     * (CREATE/ALTER TABLE, ...) end the transaction, and PDO::commit()/rollBack() would throw.
+     *
+     * @return bool whether a transaction is still open
+     */
+    private function syncTransactionLevel()
+    {
+        if (!$this->db->inTransaction()) {
+            $this->transaction_level = 0;
+            return false;
+        }
+        if ($this->transaction_level == 0) {
+            // a transaction opened directly on the PDO connection
+            $this->transaction_level = 1;
+        }
+        return true;
     }
 
     /**

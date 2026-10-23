@@ -19,10 +19,13 @@ class DBCoreTest extends TestCase
 
     public function testFetchWithValidQueryReturnsExpectedResults(): void
     {
-        $this->pdoMock->method('Execute')->willReturn($this->prepareMockResult([
-            ['id' => 1, 'name' => 'John Doe'],
-            ['id' => 2, 'name' => 'Jane Doe']
-        ]));
+        // fetch() runs a count query first, so every Execute() needs its own statement
+        $this->pdoMock->method('Execute')->willReturnCallback(function () {
+            return $this->prepareMockResult([
+                ['id' => 1, 'name' => 'John Doe'],
+                ['id' => 2, 'name' => 'Jane Doe']
+            ]);
+        });
         $results = $this->dbCore->fetch("name LIKE '%Doe%'");
         $this->assertCount(2, $this->dbCore->fetched_result);
         $this->assertEquals('John Doe', $this->dbCore->fetched_result[0]['name']);

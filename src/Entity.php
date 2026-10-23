@@ -162,9 +162,16 @@ class Entity extends DBCore
         return $class;
     }
 
-    public function assembly_search($params)
+    /**
+     * Builds the search conditions of the q[...] parameters. Pass $bind to get ? placeholders (and their values
+     * in $bind) for fetch()/count() $params; without it the values are written as escaped literals.
+     */
+    public function assembly_search($params, ?array &$bind = null)
     {
-        return Searchy::assemblySearch($params);
+        $connection = $this->connection;
+        return Searchy::assemblySearch($params, $bind, function ($value) use ($connection) {
+            return $connection->quote($value);
+        });
     }
 
     private function filterGets($ignored = array())

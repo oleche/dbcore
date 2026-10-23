@@ -19,7 +19,7 @@ final class SearchyTest extends TestCase {
     $query = $searchy->assemblySearch(array('q'=>array("test-eq"=>"123")));
     $this->assertEquals(
       $query,
-      "test = 123"
+      "test = '123'"
     );
   }
 
@@ -31,7 +31,7 @@ final class SearchyTest extends TestCase {
     $query = $searchy->assemblySearch(array('q'=>array("test-$comparator"=>"123")));
     $this->assertEquals(
       $query,
-      "test $expected 123"
+      "test $expected '123'"
     );
   }
 
@@ -51,6 +51,25 @@ final class SearchyTest extends TestCase {
       $query,
       "test LIKE '%Test%'"
     );
+  }
+
+  public function testBindsValues(): void {
+    $bind = [];
+    $query = Searchy::assemblySearch(array('q'=>array("name-matches"=>"Te'st", "a.code-eq"=>"007", "x-nn"=>"")), $bind);
+    $this->assertEquals("name LIKE ? AND a.code = ? AND x IS NOT NULL", $query);
+    $this->assertSame(["%Te'st%", "007"], $bind);
+  }
+
+  public function testEscapesLiterals(): void {
+    $query = Searchy::assemblySearch(array('q'=>array("name-eq"=>"x' OR '1'='1")));
+    $this->assertEquals("name = 'x\\' OR \\'1\\'=\\'1'", $query);
+  }
+
+  public function testRejectsInvalidColumnsAndComparators(): void {
+    $bind = [];
+    $query = Searchy::assemblySearch(array('q'=>array("1=1 OR name-eq"=>"x", "name-zz"=>"y", "id-eq"=>"5")), $bind);
+    $this->assertEquals("1 = 0 AND 1 = 0 AND id = ?", $query);
+    $this->assertSame(["5"], $bind);
   }
 
   public function comparatorsProvider()

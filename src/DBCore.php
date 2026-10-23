@@ -33,6 +33,7 @@ class DBCore extends DataBaseManager
     private $pagination = false;
     private $recursive;
     private $connection;
+    private $fullmap = array();
 
     // constructor
     public function __construct(
@@ -54,6 +55,7 @@ class DBCore extends DataBaseManager
         $this->ipp = $ipp;
         $this->recursive = true;
         $this->count = 0;
+        $this->fullmap = $fullmap;
         foreach ($db_columns as $columnname) {
             $this->columns[$columnname] = null;
         }
@@ -99,28 +101,13 @@ class DBCore extends DataBaseManager
      * @param null $order array countaining the columns that want to be ordered by
      * @param bool $asc use only with @order. Default ascending or ASC set as false changes it to DESC
      * @param int $page use with pagination set as true. The page that needs to be queried
+     * @param array $params values for the ? placeholders used in $query (raw query string or custom SQL)
      * @return array|false
      */
-    public function fetch($query = "", $custom = false, $order = null, $asc = true, $page = 0)
+    public function fetch($query = "", $custom = false, $order = null, $asc = true, $page = 0, array $params = array())
     {
         $this->err_data = "";
-        $count = 0;
-        $order_text = "";
-        if (!is_null($order)) {
-            $order_text = " ORDER BY ";
-            foreach ($order as $keys) {
-                if ($count > 0) {
-                    $order_text .= ' , ';
-                }
-                $order_text .= $keys;
-                $count++;
-            }
-            if ($asc) {
-                $order_text .= " ASC";
-            } else {
-                $order_text .= " DESC";
-            }
-        }
+        $order_text = $this->buildOrder($order, $asc);
 
         if (!$custom) {
             if ($query != "") {
@@ -129,35 +116,31 @@ class DBCore extends DataBaseManager
 
             $sql = 'SELECT * FROM ' . $this->db_name . '' . $query . ' ' . $order_text;
             $this->count = $this->fixedCount(
-                'SELECT count(*) FROM ' . $this->db_name . '' . $query . ' ' . $order_text . ';'
+                'SELECT count(*) FROM ' . $this->db_name . '' . $query . ' ' . $order_text . ';',
+                $params
             );
-            if ($this->pagination) {
-                $this->pages = ceil($this->count / $this->ipp);
-                $sql .= ' LIMIT ' . ($page * $this->ipp) . ',' . $this->ipp . ';';
-            } else {
-                $sql .= ';';
-            }
+            $sql .= $this->buildLimit($page) . ';';
         } else {
-            if (
-              (int)method_exists($query, 'toSql') > 0 &&
-              is_callable(array($query, 'toSql'))
-            ) {
+            if (is_object($query) && method_exists($query, 'toSql')) {
                 $query->forCount(true);
                 $count_sql = $query->toSql();
                 $query->forCount(false);
                 $sql = $query->toSql();
+                if (method_exists($query, 'getParams')) {
+                    $params = array_merge($query->getParams(), $params);
+                }
 
                 $this->count = $this->fixedCount(
-                    $count_sql
+                    $count_sql,
+                    $params
                 );
-                if ($this->pagination) {
-                    $this->pages = ceil($this->count / $this->ipp);
-                    $sql .= ' LIMIT ' . ($page * $this->ipp) . ',' . $this->ipp . ';';
-                } else {
-                    $sql .= ';';
+                // an order defined on the builder wins over the $order argument
+                if (!(method_exists($query, 'hasOrder') && $query->hasOrder())) {
+                    $sql .= $order_text;
                 }
+                $sql .= $this->buildLimit($page) . ';';
             } else {
-                $sql = $query;
+                $sql = $this->appendOrder($query, $order_text);
             }
         }
 
@@ -168,7 +151,7 @@ class DBCore extends DataBaseManager
             try {
                 $this->beginTransaction();
 
-                $result = $this->db->Execute($sql);
+                $result = $this->db->Execute($sql, $params);
 
                 $this->commit();
             } catch (Exception $e) {
@@ -180,7 +163,7 @@ class DBCore extends DataBaseManager
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 //$row = array_map('utf8_encode', $row);
                 if (!$custom) {
-                    $rowobj = new DBCore($this->connection, $this->db_name, $this->columns_defs, $this->the_key);
+                    $rowobj = $this->newRow();
                     foreach ($this->columns_defs as $definitions) {
                         if (in_array($definitions, $this->foreign_keys)) {
                             if ($this->foreign_relations[$definitions][1] == $this::SELF) {
@@ -234,8 +217,10 @@ class DBCore extends DataBaseManager
         return $retorno;
     }
 
-    public function fetch_obj_in($objs, $cond = "", $order = null, $asc = true, $page = 0)
+    public function fetch_obj_in($objs, $cond = "", $order = null, $asc = true, $page = 0, array $params = array())
     {
+        $cond_params = $params;
+        $params = array();
         $consulta = "";
         $this->err_data = "";
 
@@ -257,9 +242,10 @@ class DBCore extends DataBaseManager
                     $fobjs[] = $fkey;
                     $ftables[$fkey] = $obj->columns;
                     if (in_array($value[1], $obj->the_key)) {
-                        $statements[] .= $this->keyValuePair(
+                        $statements[] = $this->bindPair(
                             $base_letter . "." . $value[1],
-                            $obj->columns[$value[1]]
+                            $obj->columns[$value[1]],
+                            $params
                         );
                         $statements[] = $base_letter . "." . $value[1] . "=" . $base_table . "." . $fkey;
                     }
@@ -289,36 +275,17 @@ class DBCore extends DataBaseManager
 
         if ($cond != "") {
             $joinstr .= " AND " . $cond;
+            $params = array_merge($params, $cond_params);
         }
 
-        $count = 0;
-        $order_text = "";
-        if (!is_null($order)) {
-            $order_text = " ORDER BY ";
-            foreach ($order as $keys) {
-                if ($count > 0) {
-                    $order_text .= ' , ';
-                }
-                $order_text .= $keys;
-                $count++;
-            }
-            if ($asc) {
-                $order_text .= "ASC";
-            } else {
-                $order_text .= "DESC";
-            }
-        }
+        $order_text = $this->buildOrder($order, $asc);
 
         $sql = 'SELECT ' . $base_table . '.* FROM ' . $tablestr . ' WHERE ' . $joinstr . ' ' . $order_text;
         $this->count = $this->fixedCount(
-            'SELECT count(' . $base_table . '.*) FROM ' . $tablestr . ' WHERE ' . $joinstr . ' ' . $order_text . ';'
+            'SELECT count(' . $base_table . '.*) FROM ' . $tablestr . ' WHERE ' . $joinstr . ' ' . $order_text . ';',
+            $params
         );
-        if ($this->pagination) {
-            $this->pages = ceil($this->count / $this->ipp);
-            $sql .= ' LIMIT ' . ($page * $this->ipp) . ',' . $this->ipp . ';';
-        } else {
-            $sql .= ';';
-        }
+        $sql .= $this->buildLimit($page) . ';';
 
         $retorno = array();
 
@@ -326,7 +293,7 @@ class DBCore extends DataBaseManager
             try {
                 $this->beginTransaction();
 
-                $result = $this->db->Execute($sql);
+                $result = $this->db->Execute($sql, $params);
 
                 $this->commit();
             } catch (Exception $e) {
@@ -337,7 +304,7 @@ class DBCore extends DataBaseManager
 
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 //$row = array_map('utf8_encode', $row);
-                $rowobj = new DBCore($this->connection, $this->db_name, $this->columns_defs, $this->the_key);
+                $rowobj = $this->newRow();
                 foreach ($this->columns_defs as $defs) {
                     if (in_array($defs, $fobjs)) {
                         $rowobj->columns[$defs] = $ftables[$defs];
@@ -394,53 +361,37 @@ class DBCore extends DataBaseManager
      * @param bool $asc use only with @order. Default ascending or ASC set as false changes it to DESC
      * @param string $cond the search query that will go as a Where, if empty "" the WHERE statement won't be added
      * @param int $page use with pagination set as true. The page that needs to be queried
+     * @param array $params values for the ? placeholders used in $cond
      * @return bool
      */
-    public function fetch_id($id, $order = null, $asc = true, $cond = "", $page = 0)
+    public function fetch_id($id, $order = null, $asc = true, $cond = "", $page = 0, array $params = array())
     {
         $this->err_data = "";
 
         $result = false;
 
         $key_names = "";
+        $cond_params = $params;
+        $params = array();
 
         if (is_array($id) && count($id) > 0) {
-            $key_names = $this->assembleQuery($this->the_key, false, true, $id);
+            $key_names = $this->assembleQuery($this->the_key, false, true, $id, "", $params);
         }
 
         if ($cond != "") {
             $key_names .= ($key_names != "") ? " AND " : "";
             $key_names .= $cond;
+            $params = array_merge($params, $cond_params);
         }
 
-        $count = 0;
-        $order_text = "";
-        if (!is_null($order)) {
-            $order_text = " ORDER BY ";
-            foreach ($order as $keys) {
-                if ($count > 0) {
-                    $order_text .= ' , ';
-                }
-                $order_text .= $keys;
-                $count++;
-            }
-            if ($asc) {
-                $order_text .= "ASC";
-            } else {
-                $order_text .= "DESC";
-            }
-        }
+        $order_text = $this->buildOrder($order, $asc);
 
         $sql = 'SELECT * FROM ' . $this->db_name . ' WHERE ' . $key_names . ' ' . $order_text;
         $this->count = $this->fixedCount(
-            'SELECT count(*) FROM ' . $this->db_name . ' WHERE ' . $key_names . ' ' . $order_text . ';'
+            'SELECT count(*) FROM ' . $this->db_name . ' WHERE ' . $key_names . ' ' . $order_text . ';',
+            $params
         );
-        if ($this->pagination) {
-            $this->pages = ceil($this->count / $this->ipp);
-            $sql .= ' LIMIT ' . ($page * $this->ipp) . ',' . $this->ipp . ';';
-        } else {
-            $sql .= ';';
-        }
+        $sql .= $this->buildLimit($page) . ';';
 
         try {
             if (is_null($id)) {
@@ -451,7 +402,7 @@ class DBCore extends DataBaseManager
                 try {
                     $this->beginTransaction();
 
-                    $result = $this->db->Execute($sql);
+                    $result = $this->db->Execute($sql, $params);
 
                     $this->commit();
                 } catch (Exception $e) {
@@ -531,9 +482,10 @@ class DBCore extends DataBaseManager
      * @param null $group if a group is needed
      * @param false $custom executes a custom query from scratch. Will return the entire result so the needed would be
      *                      to return an array with the count in the first slot
+     * @param array $params values for the ? placeholders used in $query
      * @return array|false
      */
-    public function count($query = "", $group = null, $custom = false)
+    public function count($query = "", $group = null, $custom = false, array $params = array())
     {
         $this->err_data = "";
 
@@ -583,7 +535,7 @@ class DBCore extends DataBaseManager
             try {
                 $this->beginTransaction();
 
-                $result = $this->db->Execute($sql);
+                $result = $this->db->Execute($sql, $params);
 
                 $this->commit();
             } catch (Exception $e) {
@@ -613,25 +565,23 @@ class DBCore extends DataBaseManager
      */
     public function isUnique($uniquenessKeys = array(), $values = array())
     {
-        $count = 0;
-        $query = "";
+        $conditions = array();
+        $params = array();
         foreach ((array)$uniquenessKeys as $key) {
-            if ($count > 0) {
-                $query .= " AND ";
-            }
-
             if (isset($values[$key])) {
-                $query .= $this->keyValuePair($key, $values[$key]);
+                $conditions[] = $this->bindPair($key, $values[$key], $params);
             }
-
-            $count++;
         }
 
-        if ($query != "") {
-            $query = " WHERE " . $query;
+        // without values for the keys there is nothing that can collide
+        if (empty($conditions)) {
+            return true;
         }
 
-        $items = $this->fixedCount('SELECT count(*) FROM ' . $this->db_name . '' . $query . ';');
+        $items = $this->fixedCount(
+            'SELECT count(*) FROM ' . $this->db_name . ' WHERE ' . implode(' AND ', $conditions) . ';',
+            $params
+        );
 
         if ($items == 0) {
             return true;
@@ -645,9 +595,10 @@ class DBCore extends DataBaseManager
      * false based on the status of the deletion
      *
      * @param null $conditions the statement after the WHERE command
+     * @param array $params values for the ? placeholders used in $conditions
      * @return bool
      */
-    public function delete($conditions = null)
+    public function delete($conditions = null, array $params = array())
     {
         $this->err_data = "";
         $key_names = "";
@@ -655,7 +606,8 @@ class DBCore extends DataBaseManager
         if (!is_null($conditions)) {
             $key_names = $conditions;
         } else {
-            $key_names = $this->assembleQuery($this->the_key, false, true, $this->columns, "a.");
+            $params = array();
+            $key_names = $this->assembleQuery($this->the_key, false, true, $this->columns, "a.", $params);
         }
 
         $sql = $this->buildDelete($this->db_name, $key_names);
@@ -663,7 +615,7 @@ class DBCore extends DataBaseManager
         try {
             $this->beginTransaction();
 
-            $this->db->Execute($sql);
+            $this->db->Execute($sql, $params);
 
             $this->commit();
         } catch (Exception $ex) {
@@ -683,9 +635,10 @@ class DBCore extends DataBaseManager
      * @param null $conditions the complementary query to add after the WHERE sentence
      * @param array $set a custom set of key->value for each column in the table to be updated.
      * @param array $from the same structure as @set but for assembling a WHERE statement
+     * @param array $params values for the ? placeholders used in $conditions
      * @return bool
      */
-    public function update($conditions = null, $set = array(), $from = array())
+    public function update($conditions = null, $set = array(), $from = array(), array $params = array())
     {
         $query = "";
         try {
@@ -717,14 +670,14 @@ class DBCore extends DataBaseManager
             }
 
             $sql = $query->toSql();
+            $update_params = $query->getParams();
 
             if (!is_null($conditions)) {
                 $sql .= ' AND ' . $conditions;
+                $update_params = array_merge($update_params, $params);
             }
 
-            //echo $sql;
-
-            $result = $this->db->Execute($sql);
+            $result = $this->db->Execute($sql, $update_params);
 
             $this->commit();
         } catch (Exception $e) {
@@ -750,7 +703,7 @@ class DBCore extends DataBaseManager
 
             $query = $this->assemblyInsertUsingBuilder($this->db_name, $this->columns);
 
-            $this->db->Execute($query->toSql());
+            $this->db->Execute($query->toSql(), $query->getParams());
 
             $result = $this->db->LastID();
             $this->commit();
@@ -901,9 +854,10 @@ class DBCore extends DataBaseManager
      * value of the count result
      *
      * @param string $cond the count query
+     * @param array $params values for the ? placeholders used in $cond
      * @return false|int|mixed
      */
-    private function fixedCount($cond = "")
+    private function fixedCount($cond = "", array $params = array())
     {
         $this->err_data = "";
 
@@ -913,7 +867,7 @@ class DBCore extends DataBaseManager
         $sql = $cond;
 
         try {
-            $result = $this->db->Execute($sql);
+            $result = $this->db->Execute($sql, $params);
 
             if ($row = $result->fetch(PDO::FETCH_NUM)) {
                 $count = $row[0];
@@ -925,5 +879,62 @@ class DBCore extends DataBaseManager
             return false;
         }
         return $count;
+    }
+
+    /**
+     * Runs the callback inside a transaction. Every insert, update or fetch done by any model in the callback
+     * joins it (they share the connection), so the whole set of writes is committed together. The transaction
+     * is rolled back when the callback throws (the exception is re-thrown) or returns false.
+     * Instantiate the models before starting it: creating a missing table commits implicitly in MySQL.
+     *
+     * @param callable $callback
+     * @return mixed the value returned by the callback
+     */
+    public function transaction(callable $callback)
+    {
+        return $this->db->transaction($callback);
+    }
+
+    private function newRow()
+    {
+        return new DBCore(
+            $this->connection,
+            $this->db_name,
+            $this->columns_defs,
+            $this->the_key,
+            null,
+            (int)$this->ipp,
+            $this->fullmap
+        );
+    }
+
+    private function buildOrder($order, $asc)
+    {
+        if (is_null($order)) {
+            return "";
+        }
+        return " ORDER BY " . implode(' , ', (array)$order) . ($asc ? " ASC" : " DESC");
+    }
+
+    private function buildLimit($page)
+    {
+        if (!$this->pagination) {
+            return '';
+        }
+        $ipp = max(1, (int)$this->ipp);
+        $this->pages = ceil($this->count / $ipp);
+        return ' LIMIT ' . ((int)$page * $ipp) . ',' . $ipp;
+    }
+
+    /**
+     * Adds the ORDER BY of the $order argument to a custom SQL string, unless the SQL already orders its results
+     */
+    private function appendOrder($sql, $order_text)
+    {
+        $sql = (string)$sql;
+        if ($order_text === "" || preg_match('/\border\s+by\b/i', $sql)) {
+            return $sql;
+        }
+        return rtrim(rtrim($sql), ';') . $order_text . ';';
     }
 }

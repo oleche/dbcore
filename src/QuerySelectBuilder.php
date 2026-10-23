@@ -9,6 +9,8 @@ class QuerySelectBuilder extends QueryBuilder
     private $tables;
     private $join_tables;
     private $group_tables;
+    private $order;
+    private $join_params;
 
     public function __construct()
     {
@@ -18,6 +20,8 @@ class QuerySelectBuilder extends QueryBuilder
         $this->tables = [];
         $this->join_tables = [];
         $this->group_tables = [];
+        $this->order = [];
+        $this->join_params = [];
     }
 
     public function withTable(string $table): QuerySelectBuilder
@@ -49,12 +53,45 @@ class QuerySelectBuilder extends QueryBuilder
     public function withJoin(string $table, QuerySelectBuilder $on, $type = 'JOIN'): QuerySelectBuilder
     {
         $this->join_tables[] = ' ' . $type . ' ' . $table . ' ON ' . $on->buildConditions(true);
+        $this->join_params = array_merge($this->join_params, $on->getParams());
         return $this;
+    }
+
+    /**
+     * Orders the results; it is left out of the count query
+     *
+     * @param string $column column or expression
+     * @param bool $asc
+     * @return QuerySelectBuilder
+     */
+    public function withOrder(string $column, bool $asc = true): QuerySelectBuilder
+    {
+        $this->order[] = $column . ($asc ? ' ASC' : ' DESC');
+        return $this;
+    }
+
+    public function hasOrder(): bool
+    {
+        return count($this->order) > 0;
+    }
+
+    public function getParams(): array
+    {
+        return array_merge($this->join_params, $this->params);
     }
 
     public function toSql(): string
     {
-        return $this->buildSelect() . $this->buildFrom() . $this->buildJoin() .  $this->buildConditions() . $this->buildGroup();
+        return $this->buildSelect() . $this->buildFrom() . $this->buildJoin() .  $this->buildConditions() .
+            $this->buildGroup() . $this->buildOrder();
+    }
+
+    private function buildOrder(): string
+    {
+        if (count($this->order) == 0 || $this->for_count) {
+            return '';
+        }
+        return ' ORDER BY ' . implode(', ', $this->order);
     }
 
     private function buildFrom(): string

@@ -8,11 +8,19 @@ class QueryUpdateBuilder extends QueryBuilder
 
     private $values;
 
+    /**
+     * Values bound to the SET placeholders (they come before the WHERE ones)
+     *
+     * @var array
+     */
+    private $value_params;
+
     public function __construct()
     {
         $this->conditions = [];
         $this->tables = [];
         $this->values = [];
+        $this->value_params = [];
     }
 
     public function withTable(string $table): QueryUpdateBuilder
@@ -36,10 +44,21 @@ class QueryUpdateBuilder extends QueryBuilder
         return $this;
     }
 
+    /**
+     * @param bool $is_column_value true when $value is a value (bound), false when it is an SQL expression
+     */
     private function buildAssignmentCondition(string $column, $value, bool $is_column_value = false): string
     {
-        $value = ($is_column_value) ? $this->filterValue($value) : $value;
+        if ($is_column_value) {
+            $this->value_params[] = $value;
+            $value = '?';
+        }
         return $column . ' = ' . $value;
+    }
+
+    public function getParams(): array
+    {
+        return array_merge($this->value_params, $this->params);
     }
 
     private function buildUpdate(): string

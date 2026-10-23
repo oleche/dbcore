@@ -8,6 +8,7 @@
 
 namespace Geekcow\Dbcore\utils;
 
+use Geekcow\Dbcore\DataBase;
 use Geekcow\Dbcore\QueryBuilder;
 use Geekcow\Dbcore\QueryInsertBuilder;
 
@@ -28,12 +29,22 @@ class QueryUtils
         return "UPDATE " . $dbname . " SET " . $query . " WHERE " . $key_names;
     }
 
-    protected function assembleQuery($columns, $is_insert = false, $is_from = false, $values = null, $modifier = "")
-    {
+    /**
+     * Builds the key/value pairs of $columns. When $params is given the values are added to it and the pairs use
+     * ? placeholders, otherwise the values are written as escaped literals.
+     */
+    protected function assembleQuery(
+        $columns,
+        $is_insert = false,
+        $is_from = false,
+        $values = null,
+        $modifier = "",
+        ?array &$params = null
+    ) {
         if (!is_null($values)) {
-            return $this->iterateOverKeys($columns, $values, $is_insert, $is_from, $modifier);
+            return $this->iterateOverKeys($columns, $values, $is_insert, $is_from, $modifier, $params);
         } else {
-            return $this->iterateOverKeys($columns, $columns, $is_insert, $is_from, $modifier);
+            return $this->iterateOverKeys($columns, $columns, $is_insert, $is_from, $modifier, $params);
         }
     }
 
@@ -44,8 +55,14 @@ class QueryUtils
         return $qb->withColumnValues($columns);
     }
 
-    private function iterateOverKeys($columns, $values, $is_insert = false, $is_from = false, $modifier = "")
-    {
+    private function iterateOverKeys(
+        $columns,
+        $values,
+        $is_insert = false,
+        $is_from = false,
+        $modifier = "",
+        ?array &$params = null
+    ) {
         $query = "";
         $count = 0;
 
@@ -58,27 +75,57 @@ class QueryUtils
             if ($count > 0) {
                 $query .= $is_from ? ' AND ' : ', ';
             }
-            $query .= $this->keyValuePair($modifier . $the_key, $values[$the_key] ?? null, $is_insert);
+            if (is_array($params)) {
+                $query .= $this->bindPair($modifier . $the_key, $values[$the_key] ?? null, $params, $is_insert);
+            } else {
+                $query .= $this->keyValuePair($modifier . $the_key, $values[$the_key] ?? null, $is_insert);
+            }
             $count++;
         }
 
         return $query;
     }
 
+    /**
+     * Returns "key = ?" (or just "?" for inserts) and appends the value to $params
+     */
+    protected function bindPair($key, $value, array &$params, $is_insert = false)
+    {
+        $params[] = $value;
+        return (!$is_insert ? $key . ' = ' : '') . '?';
+    }
+
+    /**
+     * Returns "key=literal" with the value escaped. Prefer bindPair(), which keeps the value out of the SQL.
+     */
     protected function keyValuePair($key, $value, $is_insert = false)
     {
-        return (!$is_insert ? $key . '=' : "")
-            . (($this->getType($value) == 'boolean'
-                || $this->getType($value) == 'float'
-                || $this->getType($value) == 'integer'
-                || $this->getType($value) == 'numeric'
-                || $this->getType($value) == 'NULL') ? '' : "'")
-            . (($this->getType($value) == 'NULL') ? 'NULL' : $value)
-            . (($this->getType($value) == 'boolean'
-                || $this->getType($value) == 'float'
-                || $this->getType($value) == 'integer'
-                || $this->getType($value) == 'numeric'
-                || $this->getType($value) == 'NULL') ? '' : "'");
+        return (!$is_insert ? $key . '=' : "") . $this->toLiteral($value);
+    }
+
+    /**
+     * Writes a value as an SQL literal: NULL, numbers as they are, booleans as 1/0 and everything else as an
+     * escaped quoted string (so text like "007" keeps its leading zeros)
+     */
+    protected function toLiteral($value)
+    {
+        if (is_null($value)) {
+            return 'NULL';
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string)$value;
+        }
+        if (is_array($value)) {
+            $value = json_encode($value);
+        }
+        $value = (string)$value;
+        if (isset($this->db) && $this->db instanceof DataBase) {
+            return $this->db->quote($value);
+        }
+        return DataBase::escapeLiteral($value);
     }
 
     public static function getType($var)
