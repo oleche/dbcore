@@ -1,58 +1,49 @@
-# PHP CircleCI 2.0 configuration file
+# PHP CircleCI 2.1 configuration file
 #
-# Check https://circleci.com/docs/2.0/language-php/ for more details
+# Check https://circleci.com/docs/language-php/ for more details
 #
-version: 2
-jobs:
-  build:
-    docker:
-      # Specify the version you desire here
-      - image: cimg/php:7.4.26-node
+version: 2.1
 
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # Using the RAM variation mitigates I/O contention
-      # for database intensive operations.
-      # - image: circleci/mysql:5.7-ram
-      #
-      # - image: redis:2.8.19
+jobs:
+  test:
+    parameters:
+      php-version:
+        type: string
+    docker:
+      - image: cimg/php:<< parameters.php-version >>
 
     steps:
       - checkout
 
-      - run: sudo apt update # PHP CircleCI 2.0 Configuration File# PHP CircleCI 2.0 Configuration File sudo apt install zlib1g-dev libsqlite3-dev
-      - run: sudo pecl install zip
-
       # Download and cache dependencies
       - restore_cache:
           keys:
-            # "composer.lock" can be used if it is committed to the repo
-            - v1-dependencies-{{ checksum "composer.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+            - v2-dependencies-<< parameters.php-version >>-{{ checksum "composer.lock" }}
 
-      - run: sudo composer self-update --1
-
-      - run: composer install -n --prefer-dist
+      - run:
+          name: Install dependencies
+          command: composer install -n --prefer-dist
 
       - save_cache:
-          key: v1-dependencies-{{ checksum "composer.json" }}
+          key: v2-dependencies-<< parameters.php-version >>-{{ checksum "composer.lock" }}
           paths:
             - ./vendor
-      # - restore_cache:
-      #     keys:
-      #       - node-v1-{{ checksum "package.json" }}
-      #       - node-v1-
-      # - run: yarn install
-      # - save_cache:
-      #     key: node-v1-{{ checksum "package.json" }}
-      #     paths:
-      #       - node_modules
-
-      # prepare the database
-      #- run: touch storage/testing.sqlite
-      #- run: php artisan migrate --env=testing --database=sqlite_testing --force
 
       # run tests with phpunit
-      - run: ./vendor/bin/phpunit --bootstrap vendor/autoload.php tests
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            ./vendor/bin/phpunit --bootstrap vendor/autoload.php --log-junit test-results/junit.xml tests
+
+      - store_test_results:
+          path: test-results
+
+workflows:
+  test:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              # lowest supported version and the production version
+              php-version: ["7.4.33", "8.4.27"]
